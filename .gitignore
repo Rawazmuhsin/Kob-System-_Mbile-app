@@ -1,0 +1,174 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# iOS/XCode related
+**/ios/**/*.mode1v3
+**/ios/**/*.mode2v3
+**/ios/**/*.moved-aside
+**/ios/**/*.pbxuser
+**/ios/**/*.perspectivev3
+**/ios/**/*sync/
+**/ios/**/.sconsign.dblite
+**/ios/**/.tags*
+**/ios/**/.vagrant/
+**/ios/**/DerivedData/
+**/ios/**/Icon?
+**/ios/**/Pods/
+**/ios/**/.symlinks/
+**/ios/**/profile
+**/ios/**/xcuserdata
+**/ios/.generated/
+**/ios/Flutter/.last_build_id
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/app.flx
+**/ios/Flutter/app.zip
+**/ios/Flutter/flutter_assets/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+
+# macOS
+**/macos/Flutter/GeneratedPluginRegistrant.swift
+
+# Windows
+**/windows/flutter/generated_plugin_registrant.cc
+**/windows/flutter/generated_plugin_registrant.h
+
+# Linux
+**/linux/flutter/generated_plugin_registrant.cc
+**/linux/flutter/generated_plugin_registrant.h
+
+# Web
+**/web/.last_build_id
+lib/generated_plugin_registrant.dart
+
+# Coverage
+coverage/
+
+# Database files (SQLite) - IMPORTANT FOR BANKING APP
+*.db
+*.sqlite
+*.sqlite3
+banking_app.db
+
+# Environment variables and sensitive data
+.env
+.env.local
+.env.production
+.env.development
+
+# API Keys and sensitive banking data - CRITICAL FOR SECURITY
+lib/core/api_keys.dart
+lib/core/secrets.dart
+lib/core/banking_secrets.dart
+**/secrets/
+**/keys/
+**/production_config/
+
+# Generated files
+**/*.g.dart
+**/*.freezed.dart
+**/*.mocks.dart
+
+# Firebase configuration (if using Firebase)
+**/ios/Runner/GoogleService-Info.plist
+**/android/app/google-services.json
+**/lib/firebase_options.dart
+
+# Platform specific generated files
+**/android/local.properties
+**/android/keystore.properties
+**/android/key.properties
+
+# Gradle files (Android)
+**/android/.gradle/
+**/android/captures/
+**/android/gradlew
+**/android/gradlew.bat
+
+# Temporary files
+tmp/
+temp/
+
+# Test related
+test/.test_coverage.dart
+
+# Banking app specific - IMPORTANT FOR SECURITY
+**/banking_data/
+**/real_accounts/
+**/user_data/
+**/transaction_logs/
+**/sensitive_data/
+
+# Development tools
+.vscode/settings.json
+.vscode/launch.json
+
+# Flutter version management
+.fvm/
+
+# Build outputs
+**/dist/
+
+# Backup files
+*.backup
+*.bak
+*~
+
+# Archive files
+*.zip
+*.tar.gz
+*.rar
+
+# Package files
+.packages
+
+# Exceptions to above rules
+!/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
