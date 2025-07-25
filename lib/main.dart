@@ -1,34 +1,138 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'core/constants.dart';
 import 'routes/app_routes.dart';
-import 'screens/splash_screen.dart';
+import 'providers/theme_provider.dart';
+import 'providers/auth_provider.dart';
 
-void main() => runApp(const KOBApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Set preferred orientations
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+
+  runApp(const KOBApp());
+}
 
 class KOBApp extends StatelessWidget {
   const KOBApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: AppConstants.appName,
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        fontFamily: '-apple-system, BlinkMacSystemFont, Segoe UI, Roboto',
-        useMaterial3: true,
-        colorScheme: lightColorScheme,
-        textTheme: lightTextTheme,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => ThemeProvider()),
+        ChangeNotifierProvider(create: (context) => AuthProvider()),
+      ],
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            title: AppConstants.appName,
+            debugShowCheckedModeBanner: false,
+            theme: _buildLightTheme(),
+            darkTheme: _buildDarkTheme(),
+            themeMode: themeProvider.themeMode,
+            onGenerateRoute: AppRoutes.generateRoute,
+            initialRoute: AppRoutes.splash,
+            builder: (context, child) {
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
+                child: child!,
+              );
+            },
+          );
+        },
       ),
-      darkTheme: ThemeData(
-        fontFamily: '-apple-system, BlinkMacSystemFont, Segoe UI, Roboto',
-        useMaterial3: true,
-        colorScheme: darkColorScheme,
-        textTheme: darkTextTheme,
+    );
+  }
+
+  ThemeData _buildLightTheme() {
+    return ThemeData(
+      fontFamily: '-apple-system, BlinkMacSystemFont, Segoe UI, Roboto',
+      useMaterial3: true,
+      brightness: Brightness.light,
+      colorScheme: lightColorScheme,
+      textTheme: lightTextTheme,
+      appBarTheme: AppBarTheme(
+        backgroundColor: AppColors.lightSurface,
+        foregroundColor: AppColors.darkText,
+        elevation: 0,
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
       ),
-      themeMode: ThemeMode.system,
-      home: const SplashScreen(),
-      onGenerateRoute: AppRoutes.generateRoute,
-      initialRoute: AppRoutes.splash,
+      scaffoldBackgroundColor: AppColors.lightSurface,
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primaryDark,
+          foregroundColor: Colors.white,
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.9),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.black.withOpacity(0.15)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.black.withOpacity(0.15)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primaryGreen, width: 2),
+        ),
+      ),
+    );
+  }
+
+  ThemeData _buildDarkTheme() {
+    return ThemeData(
+      fontFamily: '-apple-system, BlinkMacSystemFont, Segoe UI, Roboto',
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: darkColorScheme,
+      textTheme: darkTextTheme,
+      appBarTheme: AppBarTheme(
+        backgroundColor: AppColors.darkSurface,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+      ),
+      scaffoldBackgroundColor: AppColors.darkSurface,
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primaryGreen,
+          foregroundColor: Colors.white,
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.05),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primaryGreen, width: 2),
+        ),
+      ),
     );
   }
 }
