@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/constants.dart'; // Adjusted path
-import '../../widgets/app_logo.dart'; // Adjusted path
-import '../../widgets/custom_button.dart'; // Adjusted path
-import '../../widgets/input_field.dart'; // Adjusted path
-import '../../routes/app_routes.dart'; // Adjusted path
-import '../../providers/theme_provider.dart'; // Adjusted path
+import '../../core/constants.dart';
+import '../../widgets/app_logo.dart';
+import '../../widgets/custom_button.dart';
+import '../../widgets/input_field.dart';
+import '../../routes/app_routes.dart';
+import '../../providers/theme_provider.dart';
+import '../../providers/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -48,35 +49,80 @@ class _LoginScreenState extends State<LoginScreen> {
         _isLoading = true;
       });
 
-      // Simulate login process
-      await Future.delayed(const Duration(seconds: 2));
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Login successful! Email: ${_emailController.text}'),
-            backgroundColor: AppColors.primaryGreen,
-            duration: const Duration(seconds: 2),
-          ),
+      try {
+        final success = await authProvider.login(
+          _emailController.text.trim(),
+          _passwordController.text,
         );
 
-        // Navigate to dashboard
-        AppRoutes.navigateToDashboard(context);
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+
+          if (success) {
+            // Show success message with user's name
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Welcome back, ${authProvider.currentAccount?.username ?? 'User'}!',
+                ),
+                backgroundColor: AppColors.primaryGreen,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+
+            // Navigate to dashboard
+            AppRoutes.navigateToDashboard(context);
+          } else {
+            // Show error message
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Invalid email or password. Please check your credentials and try again.',
+                ),
+                backgroundColor: Colors.red,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Login failed: ${e.toString()}'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
       }
     }
   }
 
   void _handleForgotPassword() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Opening password recovery...'),
-        duration: Duration(seconds: 2),
-      ),
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Password Recovery'),
+            content: const Text(
+              'Password recovery feature will be available soon. Please contact support if you need assistance.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
     );
   }
 
@@ -88,7 +134,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-        final isDarkMode = themeProvider.isDarkMode;
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
         return Scaffold(
           body: Container(

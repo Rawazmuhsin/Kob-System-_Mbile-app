@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/constants.dart'; // Adjusted path
-import '../../widgets/app_logo.dart'; // Adjusted path
-import '../../widgets/custom_button.dart'; // Adjusted path
-import '../../widgets/input_field.dart'; // Adjusted path
-import '../../routes/app_routes.dart'; // Adjusted path
-import '../../core/utils.dart'; // Adjusted path
-import '../../providers/theme_provider.dart'; // Adjusted path
+import '../../core/constants.dart';
+import '../../widgets/app_logo.dart';
+import '../../widgets/custom_button.dart';
+import '../../widgets/input_field.dart';
+import '../../routes/app_routes.dart';
+import '../../core/utils.dart';
+import '../../providers/theme_provider.dart';
+import '../../providers/auth_provider.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -26,7 +27,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _showPassword = false;
   bool _showConfirmPassword = false;
   bool _isLoading = false;
+  bool _emailChecking = false;
   String _selectedAccountType = 'Checking';
+  String? _emailError;
 
   @override
   void dispose() {
@@ -38,34 +41,109 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
+  // Check email availability as user types
+  void _checkEmailAvailability() async {
+    final email = _emailController.text.trim();
+    if (email.isNotEmpty && AppUtils.isValidEmail(email)) {
+      setState(() {
+        _emailChecking = true;
+        _emailError = null;
+      });
+
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final exists = await authProvider.checkEmailExists(email);
+
+      if (mounted) {
+        setState(() {
+          _emailChecking = false;
+          _emailError = exists ? 'Email address is already registered' : null;
+        });
+      }
+    }
+  }
+
   Future<void> _handleRegister() async {
-    if (_formKey.currentState!.validate()) {
+    if (_formKey.currentState!.validate() && _emailError == null) {
       setState(() {
         _isLoading = true;
       });
 
-      // Simulate registration process
-      await Future.delayed(const Duration(seconds: 2));
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Account created successfully for ${_usernameController.text}!',
-            ),
-            backgroundColor: AppColors.primaryGreen,
-            duration: const Duration(seconds: 2),
-          ),
+      try {
+        final result = await authProvider.register(
+          username: _usernameController.text.trim(),
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          confirmPassword: _confirmPasswordController.text,
+          phone: _phoneController.text.trim(),
+          accountType: _selectedAccountType,
         );
 
-        // Navigate to login
-        AppRoutes.navigateToLogin(context);
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+
+          if (result.success) {
+            // Show success message
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Welcome to KOB, ${_usernameController.text}! Your account has been created successfully.',
+                ),
+                backgroundColor: AppColors.primaryGreen,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+
+            // Navigate to dashboard (user is auto-logged in)
+            AppRoutes.navigateToDashboard(context);
+          } else {
+            // Show error message
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(result.message),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Registration failed: ${e.toString()}'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
       }
+    }
+  }
+
+  // Get password strength color
+  Color _getPasswordStrengthColor(int strength) {
+    switch (strength) {
+      case 0:
+      case 1:
+        return Colors.red;
+      case 2:
+        return Colors.orange;
+      case 3:
+        return Colors.amber;
+      case 4:
+        return AppColors.primaryGreen;
+      case 5:
+        return Colors.green[700]!;
+      default:
+        return Colors.grey;
     }
   }
 
@@ -73,7 +151,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-        final isDarkMode = themeProvider.isDarkMode;
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
         return Scaffold(
           body: Container(
@@ -203,29 +281,89 @@ class _RegisterScreenState extends State<RegisterScreen> {
               if (value == null || value.isEmpty) {
                 return 'Please enter your full name';
               }
-              if (value.length < 2) {
+              if (value.trim().length < 2) {
                 return 'Name must be at least 2 characters';
+              }
+              if (value.trim().length > 50) {
+                return 'Name must be less than 50 characters';
+              }
+              if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value.trim())) {
+                return 'Name can only contain letters and spaces';
               }
               return null;
             },
           ),
           const SizedBox(height: 20),
 
-          InputField(
-            controller: _emailController,
-            label: 'Email Address',
-            hintText: 'Enter your email address',
-            keyboardType: TextInputType.emailAddress,
-            isDarkMode: isDarkMode,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter your email';
-              }
-              if (!AppUtils.isValidEmail(value)) {
-                return 'Please enter a valid email';
-              }
-              return null;
-            },
+          // Email Field with availability checking
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              InputField(
+                controller: _emailController,
+                label: 'Email Address',
+                hintText: 'Enter your email address',
+                keyboardType: TextInputType.emailAddress,
+                isDarkMode: isDarkMode,
+                onChanged: (value) {
+                  // Check email availability as user types (with debounce)
+                  Future.delayed(const Duration(milliseconds: 500), () {
+                    if (_emailController.text == value) {
+                      _checkEmailAvailability();
+                    }
+                  });
+                },
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your email';
+                  }
+                  if (!AppUtils.isValidEmail(value)) {
+                    return 'Please enter a valid email';
+                  }
+                  if (_emailError != null) {
+                    return _emailError;
+                  }
+                  return null;
+                },
+              ),
+              if (_emailChecking)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8, left: 12),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AppColors.primaryGreen,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Checking availability...',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color:
+                              isDarkMode
+                                  ? Colors.white.withOpacity(0.7)
+                                  : AppColors.lightText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              if (_emailError != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8, left: 12),
+                  child: Text(
+                    _emailError!,
+                    style: const TextStyle(fontSize: 12, color: Colors.red),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 20),
 
@@ -251,21 +389,68 @@ class _RegisterScreenState extends State<RegisterScreen> {
           _buildAccountTypeSelection(isDarkMode),
           const SizedBox(height: 20),
 
-          InputField(
-            controller: _passwordController,
-            label: 'Password',
-            hintText: 'Enter your password',
-            obscureText: !_showPassword,
-            isDarkMode: isDarkMode,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter your password';
-              }
-              if (!AppUtils.isStrongPassword(value)) {
-                return 'Password must be at least 8 characters with uppercase, lowercase, and number';
-              }
-              return null;
-            },
+          // Password Field with strength indicator
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              InputField(
+                controller: _passwordController,
+                label: 'Password',
+                hintText: 'Enter your password',
+                obscureText: !_showPassword,
+                isDarkMode: isDarkMode,
+                onChanged: (value) {
+                  setState(() {}); // Rebuild for password strength indicator
+                },
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your password';
+                  }
+                  if (!AppUtils.isStrongPassword(value)) {
+                    return 'Password must be at least 8 characters with uppercase, lowercase, and number';
+                  }
+                  return null;
+                },
+              ),
+              if (_passwordController.text.isNotEmpty)
+                Consumer<AuthProvider>(
+                  builder: (context, authProvider, child) {
+                    final strength = authProvider.getPasswordStrength(
+                      _passwordController.text,
+                    );
+                    final description = authProvider
+                        .getPasswordStrengthDescription(
+                          _passwordController.text,
+                        );
+
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8, left: 12),
+                      child: Row(
+                        children: [
+                          Text(
+                            'Password strength: ',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color:
+                                  isDarkMode
+                                      ? Colors.white.withOpacity(0.7)
+                                      : AppColors.lightText,
+                            ),
+                          ),
+                          Text(
+                            description,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: _getPasswordStrengthColor(strength),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+            ],
           ),
           const SizedBox(height: 20),
 
@@ -293,7 +478,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
           CustomButton(
             text: _isLoading ? 'Creating Account...' : 'Create Account',
-            onPressed: _isLoading ? null : _handleRegister,
+            onPressed:
+                (_isLoading || _emailChecking || _emailError != null)
+                    ? null
+                    : _handleRegister,
             isPrimary: true,
             isLoading: _isLoading,
           ),
