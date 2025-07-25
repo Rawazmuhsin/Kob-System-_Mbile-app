@@ -1,26 +1,484 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../core/constants.dart'; // Adjusted path
+import '../../widgets/app_logo.dart'; // Adjusted path
+import '../../widgets/custom_button.dart'; // Adjusted path
+import '../../widgets/input_field.dart'; // Adjusted path
+import '../../routes/app_routes.dart'; // Adjusted path
+import '../../core/utils.dart'; // Adjusted path
+import '../../providers/theme_provider.dart'; // Adjusted path
 
-class RegisterScreen extends StatelessWidget {
+class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Create Account'), centerTitle: true),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.person_add, size: 100, color: Color(0xFF10B981)),
-            SizedBox(height: 20),
-            Text(
-              'Register Screen',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  bool _showPassword = false;
+  bool _showConfirmPassword = false;
+  bool _isLoading = false;
+  String _selectedAccountType = 'Checking';
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleRegister() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      // Simulate registration process
+      await Future.delayed(const Duration(seconds: 2));
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Account created successfully for ${_usernameController.text}!',
             ),
-            SizedBox(height: 10),
+            backgroundColor: AppColors.primaryGreen,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+
+        // Navigate to login
+        AppRoutes.navigateToLogin(context);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        final isDarkMode = themeProvider.isDarkMode;
+
+        return Scaffold(
+          body: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors:
+                    isDarkMode
+                        ? AppColors.darkGradient
+                        : AppColors.lightGradient,
+              ),
+            ),
+            child: SafeArea(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight:
+                          MediaQuery.of(context).size.height -
+                          MediaQuery.of(context).padding.top -
+                          MediaQuery.of(context).padding.bottom,
+                    ),
+                    child: Column(
+                      children: [
+                        _buildHeader(isDarkMode),
+                        _buildRegistrationForm(isDarkMode),
+                        _buildFooter(isDarkMode),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildHeader(bool isDarkMode) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 40, bottom: 30),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+            left: 0,
+            top: 0,
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color:
+                    isDarkMode
+                        ? Colors.white.withOpacity(0.1)
+                        : Colors.white.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color:
+                      isDarkMode
+                          ? Colors.white.withOpacity(0.2)
+                          : Colors.black.withOpacity(0.1),
+                ),
+              ),
+              child: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: Icon(
+                  Icons.arrow_back,
+                  color: isDarkMode ? Colors.white : AppColors.darkText,
+                  size: 18,
+                ),
+              ),
+            ),
+          ),
+          Column(
+            children: [
+              const SizedBox(height: 30),
+              const AppLogo(size: 70),
+              const SizedBox(height: 16),
+              ShaderMask(
+                shaderCallback:
+                    (bounds) => const LinearGradient(
+                      colors: [Color(0xFF1F2937), Color(0xFF10B981)],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ).createShader(bounds),
+                child: const Text(
+                  'Create Your Account',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Join KOB and start your banking journey',
+                style: TextStyle(
+                  fontSize: 16,
+                  color:
+                      isDarkMode
+                          ? Colors.white.withOpacity(0.8)
+                          : AppColors.lightText,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRegistrationForm(bool isDarkMode) {
+    return Form(
+      key: _formKey,
+      child: Column(
+        children: [
+          InputField(
+            controller: _usernameController,
+            label: 'Full Name',
+            hintText: 'Enter your full name',
+            isDarkMode: isDarkMode,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter your full name';
+              }
+              if (value.length < 2) {
+                return 'Name must be at least 2 characters';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 20),
+
+          InputField(
+            controller: _emailController,
+            label: 'Email Address',
+            hintText: 'Enter your email address',
+            keyboardType: TextInputType.emailAddress,
+            isDarkMode: isDarkMode,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter your email';
+              }
+              if (!AppUtils.isValidEmail(value)) {
+                return 'Please enter a valid email';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 20),
+
+          InputField(
+            controller: _phoneController,
+            label: 'Phone Number',
+            hintText: 'Enter your phone number',
+            keyboardType: TextInputType.phone,
+            isDarkMode: isDarkMode,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter your phone number';
+              }
+              if (!AppUtils.isValidPhone(value)) {
+                return 'Please enter a valid phone number';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 20),
+
+          // Account Type Selection
+          _buildAccountTypeSelection(isDarkMode),
+          const SizedBox(height: 20),
+
+          InputField(
+            controller: _passwordController,
+            label: 'Password',
+            hintText: 'Enter your password',
+            obscureText: !_showPassword,
+            isDarkMode: isDarkMode,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter your password';
+              }
+              if (!AppUtils.isStrongPassword(value)) {
+                return 'Password must be at least 8 characters with uppercase, lowercase, and number';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 20),
+
+          InputField(
+            controller: _confirmPasswordController,
+            label: 'Confirm Password',
+            hintText: 'Confirm your password',
+            obscureText: !_showConfirmPassword,
+            isDarkMode: isDarkMode,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please confirm your password';
+              }
+              if (value != _passwordController.text) {
+                return 'Passwords do not match';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 20),
+
+          // Password visibility toggles
+          _buildPasswordToggles(isDarkMode),
+          const SizedBox(height: 32),
+
+          CustomButton(
+            text: _isLoading ? 'Creating Account...' : 'Create Account',
+            onPressed: _isLoading ? null : _handleRegister,
+            isPrimary: true,
+            isLoading: _isLoading,
+          ),
+          const SizedBox(height: 16),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Already have an account? ',
+                style: TextStyle(
+                  color:
+                      isDarkMode
+                          ? Colors.white.withOpacity(0.8)
+                          : AppColors.lightText,
+                ),
+              ),
+              TextButton(
+                onPressed: () => AppRoutes.navigateToLogin(context),
+                child: Text(
+                  'Sign In',
+                  style: TextStyle(
+                    color: AppColors.primaryGreen,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAccountTypeSelection(bool isDarkMode) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Account Type',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: isDarkMode ? Colors.white : AppColors.darkText,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color:
+                isDarkMode
+                    ? Colors.white.withOpacity(0.05)
+                    : Colors.white.withOpacity(0.9),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color:
+                  isDarkMode
+                      ? Colors.white.withOpacity(0.15)
+                      : Colors.black.withOpacity(0.15),
+              width: 2,
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: RadioListTile<String>(
+                  title: Text(
+                    'Checking',
+                    style: TextStyle(
+                      color: isDarkMode ? Colors.white : AppColors.darkText,
+                    ),
+                  ),
+                  value: 'Checking',
+                  groupValue: _selectedAccountType,
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedAccountType = value!;
+                    });
+                  },
+                  activeColor: AppColors.primaryGreen,
+                ),
+              ),
+              Expanded(
+                child: RadioListTile<String>(
+                  title: Text(
+                    'Savings',
+                    style: TextStyle(
+                      color: isDarkMode ? Colors.white : AppColors.darkText,
+                    ),
+                  ),
+                  value: 'Savings',
+                  groupValue: _selectedAccountType,
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedAccountType = value!;
+                    });
+                  },
+                  activeColor: AppColors.primaryGreen,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPasswordToggles(bool isDarkMode) {
+    return Row(
+      children: [
+        Expanded(
+          child: Row(
+            children: [
+              Checkbox(
+                value: _showPassword,
+                onChanged: (value) {
+                  setState(() {
+                    _showPassword = value!;
+                  });
+                },
+                activeColor: AppColors.primaryDark,
+              ),
+              Expanded(
+                child: Text(
+                  'Show password',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color:
+                        isDarkMode
+                            ? Colors.white.withOpacity(0.8)
+                            : AppColors.lightText,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: Row(
+            children: [
+              Checkbox(
+                value: _showConfirmPassword,
+                onChanged: (value) {
+                  setState(() {
+                    _showConfirmPassword = value!;
+                  });
+                },
+                activeColor: AppColors.primaryDark,
+              ),
+              Expanded(
+                child: Text(
+                  'Show confirm',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color:
+                        isDarkMode
+                            ? Colors.white.withOpacity(0.8)
+                            : AppColors.lightText,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFooter(bool isDarkMode) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20, top: 20),
+      child: TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.arrow_back, size: 16, color: AppColors.primaryGreen),
+            const SizedBox(width: 8),
             Text(
-              'Coming Soon...',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+              'Back to Homepage',
+              style: TextStyle(
+                color: AppColors.primaryGreen,
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
