@@ -213,7 +213,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             backgroundColor: AppColors.primaryGreen.withOpacity(0.1),
             child: Text(
               dashboardProvider.currentAccount?.username
-                      ?.substring(0, 1)
+                      .substring(0, 1)
                       .toUpperCase() ??
                   'U',
               style: TextStyle(

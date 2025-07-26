@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../core/constants.dart';
 import '../providers/auth_provider.dart';
 import '../routes/app_routes.dart';
-import 'app_logo.dart';
 
 class AppNavigationDrawer extends StatelessWidget {
   final int selectedIndex;

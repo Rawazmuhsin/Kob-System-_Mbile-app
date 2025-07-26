@@ -1,3 +1,4 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +9,7 @@ import 'providers/theme_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/forgot_password_provider.dart';
 import 'providers/dashboard_provider.dart';
+import 'providers/balance_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,6 +43,7 @@ class KOBApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => AuthProvider()),
         ChangeNotifierProvider(create: (context) => ForgotPasswordProvider()),
         ChangeNotifierProvider(create: (context) => DashboardProvider()),
+        ChangeNotifierProvider(create: (context) => BalanceProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -104,6 +107,17 @@ class KOBApp extends StatelessWidget {
           borderSide: const BorderSide(color: AppColors.primaryGreen, width: 2),
         ),
       ),
+      tabBarTheme: TabBarTheme(
+        labelColor: AppColors.primaryGreen,
+        unselectedLabelColor: AppColors.lightText,
+        indicatorColor: AppColors.primaryGreen,
+        indicatorSize: TabBarIndicatorSize.tab,
+        labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     );
   }
 
@@ -145,6 +159,17 @@ class KOBApp extends StatelessWidget {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.primaryGreen, width: 2),
+        ),
+      ),
+      tabBarTheme: TabBarTheme(
+        labelColor: AppColors.primaryGreen,
+        unselectedLabelColor: Colors.white60,
+        indicatorColor: AppColors.primaryGreen,
+        indicatorSize: TabBarIndicatorSize.tab,
+        labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );

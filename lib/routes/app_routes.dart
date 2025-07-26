@@ -1,9 +1,11 @@
+// lib/routes/app_routes.dart
 import 'package:flutter/material.dart';
 import '../screens/welcome_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
 import '../screens/dashboard/dashboard_screen.dart';
+import '../screens/balance/balance_screen.dart';
 
 class AppRoutes {
   // Route names
@@ -51,6 +53,55 @@ class AppRoutes {
       case dashboard:
         return MaterialPageRoute(
           builder: (_) => const DashboardScreen(),
+          settings: settings,
+        );
+
+      case balance:
+        return MaterialPageRoute(
+          builder: (_) => const BalanceScreen(),
+          settings: settings,
+        );
+
+      // Placeholder screens for other routes
+      case deposit:
+        return MaterialPageRoute(
+          builder: (_) => const PlaceholderScreen(title: 'Deposit'),
+          settings: settings,
+        );
+
+      case withdraw:
+        return MaterialPageRoute(
+          builder: (_) => const PlaceholderScreen(title: 'Withdraw'),
+          settings: settings,
+        );
+
+      case transfer:
+        return MaterialPageRoute(
+          builder: (_) => const PlaceholderScreen(title: 'Transfer'),
+          settings: settings,
+        );
+
+      case transactions:
+        return MaterialPageRoute(
+          builder: (_) => const PlaceholderScreen(title: 'Transactions'),
+          settings: settings,
+        );
+
+      case qrDisplay:
+        return MaterialPageRoute(
+          builder: (_) => const PlaceholderScreen(title: 'QR Display'),
+          settings: settings,
+        );
+
+      case qrExport:
+        return MaterialPageRoute(
+          builder: (_) => const PlaceholderScreen(title: 'QR Export'),
+          settings: settings,
+        );
+
+      case admin:
+        return MaterialPageRoute(
+          builder: (_) => const PlaceholderScreen(title: 'Admin Dashboard'),
           settings: settings,
         );
 
@@ -132,5 +183,79 @@ class AppRoutes {
   // Push and clear stack
   static void pushAndClearStack(BuildContext context, String routeName) {
     Navigator.pushNamedAndRemoveUntil(context, routeName, (route) => false);
+  }
+}
+
+// Placeholder screen for unimplemented routes
+class PlaceholderScreen extends StatelessWidget {
+  final String title;
+
+  const PlaceholderScreen({super.key, required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title),
+        backgroundColor:
+            isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+        foregroundColor: isDarkMode ? Colors.white : const Color(0xFF1E293B),
+      ),
+      backgroundColor:
+          isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.construction,
+              size: 64,
+              color:
+                  isDarkMode
+                      ? Colors.white.withOpacity(0.5)
+                      : Colors.black.withOpacity(0.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '$title Screen',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
+                color: isDarkMode ? Colors.white : const Color(0xFF1E293B),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'This screen is under development',
+              style: TextStyle(
+                fontSize: 16,
+                color:
+                    isDarkMode
+                        ? Colors.white.withOpacity(0.7)
+                        : const Color(0xFF64748B),
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF10B981),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text('Go Back'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
