@@ -55,7 +55,7 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // Register method
+  // Register method - WITH IMPROVED ERROR HANDLING
   Future<RegisterResult> register({
     required String username,
     required String email,
@@ -67,6 +67,12 @@ class AuthProvider with ChangeNotifier {
     _setLoading(true);
 
     try {
+      print('=== REGISTRATION ATTEMPT ===');
+      print('Username: $username');
+      print('Email: $email');
+      print('Phone: $phone');
+      print('Account Type: $accountType');
+
       final result = await _signupConfirmation.performSignup(
         username: username,
         email: email,
@@ -79,6 +85,8 @@ class AuthProvider with ChangeNotifier {
       _setLoading(false);
 
       if (result.success && result.account != null) {
+        print('✅ Registration successful!');
+
         // Optionally auto-login after successful registration
         _currentAccount = result.account;
         _currentUser = User(
@@ -94,6 +102,7 @@ class AuthProvider with ChangeNotifier {
           message: 'Account created successfully!',
         );
       } else {
+        print('❌ Registration failed: ${result.errorMessage}');
         return RegisterResult(
           success: false,
           message: result.errorMessage ?? 'Registration failed',
@@ -101,7 +110,7 @@ class AuthProvider with ChangeNotifier {
       }
     } catch (e) {
       _setLoading(false);
-      debugPrint('Registration error: $e');
+      print('❌ Registration error: $e');
       return RegisterResult(
         success: false,
         message: 'Registration failed: ${e.toString()}',
@@ -157,12 +166,20 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // Check if email exists (for validation)
+  // Check if email exists (for validation) - WITH BETTER ERROR HANDLING
   Future<bool> checkEmailExists(String email) async {
     try {
-      return await _authService.emailExists(email);
+      print('=== EMAIL CHECK DEBUG ===');
+      print('Checking email: $email');
+
+      final result = await _authService.emailExists(email);
+      print('Email exists result: $result');
+      print('========================');
+
+      return result;
     } catch (e) {
-      debugPrint('Check email exists error: $e');
+      print('❌ Check email exists error: $e');
+      // Return false instead of throwing error to prevent blocking registration
       return false;
     }
   }

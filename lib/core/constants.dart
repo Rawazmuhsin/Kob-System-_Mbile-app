@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 // App Constants
 class AppConstants {
   // App Info
-  static const String appName = 'KOB Mobile Banking';
+  static const String appName = 'KOB ';
   static const String appSubtitle = 'Kurdish-O-Banking';
   static const String appTagline = 'Your Future, Your Bank';
   static const String appVersion = 'Version 1.0 | © 2025 Kurdish-O-Banking';

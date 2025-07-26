@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'core/constants.dart';
+import 'core/db_helper.dart';
 import 'routes/app_routes.dart';
 import 'providers/theme_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/forgot_password_provider.dart';
+import 'providers/dashboard_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,6 +17,15 @@ void main() async {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
+
+  // Initialize database early
+  try {
+    final dbHelper = DatabaseHelper();
+    await dbHelper.database; // This will create/open the database
+    print('✅ Database initialized successfully');
+  } catch (e) {
+    print('❌ Database initialization failed: $e');
+  }
 
   runApp(const KOBApp());
 }
@@ -29,6 +40,7 @@ class KOBApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
         ChangeNotifierProvider(create: (context) => AuthProvider()),
         ChangeNotifierProvider(create: (context) => ForgotPasswordProvider()),
+        ChangeNotifierProvider(create: (context) => DashboardProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

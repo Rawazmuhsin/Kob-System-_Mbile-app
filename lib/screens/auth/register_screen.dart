@@ -27,9 +27,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _showPassword = false;
   bool _showConfirmPassword = false;
   bool _isLoading = false;
-  bool _emailChecking = false;
   String _selectedAccountType = 'Checking';
-  String? _emailError;
 
   @override
   void dispose() {
@@ -41,29 +39,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  // Check email availability as user types
-  void _checkEmailAvailability() async {
-    final email = _emailController.text.trim();
-    if (email.isNotEmpty && AppUtils.isValidEmail(email)) {
-      setState(() {
-        _emailChecking = true;
-        _emailError = null;
-      });
-
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final exists = await authProvider.checkEmailExists(email);
-
-      if (mounted) {
-        setState(() {
-          _emailChecking = false;
-          _emailError = exists ? 'Email address is already registered' : null;
-        });
-      }
-    }
-  }
-
   Future<void> _handleRegister() async {
-    if (_formKey.currentState!.validate() && _emailError == null) {
+    if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
       });
@@ -71,6 +48,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
       try {
+        print('=== STARTING REGISTRATION ===');
+
         final result = await authProvider.register(
           username: _usernameController.text.trim(),
           email: _emailController.text.trim(),
@@ -272,6 +251,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       key: _formKey,
       child: Column(
         children: [
+          // Full Name Field
           InputField(
             controller: _usernameController,
             label: 'Full Name',
@@ -295,78 +275,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
           const SizedBox(height: 20),
 
-          // Email Field with availability checking
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              InputField(
-                controller: _emailController,
-                label: 'Email Address',
-                hintText: 'Enter your email address',
-                keyboardType: TextInputType.emailAddress,
-                isDarkMode: isDarkMode,
-                onChanged: (value) {
-                  // Check email availability as user types (with debounce)
-                  Future.delayed(const Duration(milliseconds: 500), () {
-                    if (_emailController.text == value) {
-                      _checkEmailAvailability();
-                    }
-                  });
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your email';
-                  }
-                  if (!AppUtils.isValidEmail(value)) {
-                    return 'Please enter a valid email';
-                  }
-                  if (_emailError != null) {
-                    return _emailError;
-                  }
-                  return null;
-                },
-              ),
-              if (_emailChecking)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8, left: 12),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            AppColors.primaryGreen,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Checking availability...',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color:
-                              isDarkMode
-                                  ? Colors.white.withOpacity(0.7)
-                                  : AppColors.lightText,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              if (_emailError != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8, left: 12),
-                  child: Text(
-                    _emailError!,
-                    style: const TextStyle(fontSize: 12, color: Colors.red),
-                  ),
-                ),
-            ],
+          // Email Field (simplified - no real-time checking)
+          InputField(
+            controller: _emailController,
+            label: 'Email Address',
+            hintText: 'Enter your email address',
+            keyboardType: TextInputType.emailAddress,
+            isDarkMode: isDarkMode,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter your email';
+              }
+              if (!AppUtils.isValidEmail(value)) {
+                return 'Please enter a valid email';
+              }
+              return null;
+            },
           ),
           const SizedBox(height: 20),
 
+          // Phone Field
           InputField(
             controller: _phoneController,
             label: 'Phone Number',
@@ -454,6 +382,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
           const SizedBox(height: 20),
 
+          // Confirm Password Field
           InputField(
             controller: _confirmPasswordController,
             label: 'Confirm Password',
@@ -476,17 +405,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
           _buildPasswordToggles(isDarkMode),
           const SizedBox(height: 32),
 
+          // Create Account Button
           CustomButton(
             text: _isLoading ? 'Creating Account...' : 'Create Account',
-            onPressed:
-                (_isLoading || _emailChecking || _emailError != null)
-                    ? null
-                    : _handleRegister,
+            onPressed: _isLoading ? null : _handleRegister,
             isPrimary: true,
             isLoading: _isLoading,
           ),
           const SizedBox(height: 16),
 
+          // Sign In Link
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

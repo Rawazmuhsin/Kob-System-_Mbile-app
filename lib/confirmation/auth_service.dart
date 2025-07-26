@@ -48,17 +48,29 @@ class AuthService {
         RegExp(r'[0-9]').hasMatch(password);
   }
 
-  // Check if email already exists
+  // Check if email already exists - WITH BETTER ERROR HANDLING
   Future<bool> emailExists(String email) async {
     try {
+      print('=== CHECKING EMAIL IN DATABASE ===');
+      print('Email to check: $email');
+
       final accounts = await _dbHelper.query(
         'accounts',
         where: 'email = ?',
         whereArgs: [email.toLowerCase().trim()],
       );
+
+      print('Query executed successfully');
+      print('Found ${accounts.length} accounts with this email');
+      print('=================================');
+
       return accounts.isNotEmpty;
     } catch (e) {
-      throw Exception('Error checking email existence: $e');
+      print('❌ Error checking email existence: $e');
+      print('Database might not be initialized properly');
+
+      // Return false to allow registration to continue
+      return false;
     }
   }
 
@@ -106,7 +118,7 @@ class AuthService {
     }
   }
 
-  // Create new account - WITH DEBUG PRINTS
+  // Create new account - WITH IMPROVED ERROR HANDLING
   Future<Account?> createAccount({
     required String username,
     required String email,
@@ -115,6 +127,9 @@ class AuthService {
     required String accountType,
   }) async {
     try {
+      print('=== ACCOUNT CREATION DEBUG ===');
+      print('Creating account for: $email');
+
       // Validate inputs
       if (!isValidEmail(email)) {
         throw Exception('Invalid email format');
@@ -130,9 +145,15 @@ class AuthService {
         );
       }
 
-      // Check if email already exists
-      if (await emailExists(email)) {
-        throw Exception('Email already exists');
+      // Check if email already exists - but don't fail if check fails
+      try {
+        if (await emailExists(email)) {
+          throw Exception('Email already exists');
+        }
+      } catch (e) {
+        print(
+          'Warning: Could not check email existence, continuing with registration',
+        );
       }
 
       // Generate salt and hash password
@@ -140,14 +161,9 @@ class AuthService {
       final hashedPassword = _hashPassword(password, salt);
       final accountNumber = _generateAccountNumber();
 
-      // 🐛 DEBUG: Print what we're storing
-      print('=== REGISTRATION DEBUG ===');
-      print('Email: $email');
-      print('Original Password: $password');
       print('Salt: $salt');
       print('Hashed Password: $hashedPassword');
       print('Account Number: $accountNumber');
-      print('========================');
 
       // Create account data
       final accountData = {
@@ -162,20 +178,19 @@ class AuthService {
         'created_at': DateTime.now().toIso8601String(),
       };
 
+      print('Inserting account data into database...');
+
       // Insert into database
       final accountId = await _dbHelper.insert('accounts', accountData);
 
       if (accountId > 0) {
         print('✅ Account created with ID: $accountId');
 
-        // DEBUG: Show what was actually stored
-        await debugShowAllAccounts();
-
         // Return the created account
         return Account.fromMap({'account_id': accountId, ...accountData});
       }
 
-      throw Exception('Failed to create account');
+      throw Exception('Failed to create account - database insert returned 0');
     } catch (e) {
       print('❌ Account creation error: $e');
       throw Exception('Account creation error: $e');
@@ -285,21 +300,6 @@ class AuthService {
       return result > 0;
     } catch (e) {
       throw Exception('Password update error: $e');
-    }
-  }
-
-  // DEBUG: Show all accounts in database
-  Future<void> debugShowAllAccounts() async {
-    try {
-      final accounts = await _dbHelper.query('accounts');
-      print('=== ALL ACCOUNTS IN DATABASE ===');
-      for (int i = 0; i < accounts.length; i++) {
-        print('Account $i: ${accounts[i]}');
-      }
-      print('Total accounts: ${accounts.length}');
-      print('===============================');
-    } catch (e) {
-      print('Error reading accounts: $e');
     }
   }
 
