@@ -62,16 +62,23 @@ class AuthService {
     }
   }
 
-  // Authenticate user credentials
+  // Authenticate user credentials - WITH DEBUG PRINTS
   Future<Account?> authenticate(String email, String password) async {
     try {
+      print('=== LOGIN DEBUG ===');
+      print('Trying to login with email: $email');
+      print('Trying to login with password: $password');
+
       final accounts = await _dbHelper.query(
         'accounts',
         where: 'email = ?',
         whereArgs: [email.toLowerCase().trim()],
       );
 
+      print('Found ${accounts.length} accounts with this email');
+
       if (accounts.isEmpty) {
+        print('❌ No account found with email: $email');
         return null; // Email not found
       }
 
@@ -80,17 +87,26 @@ class AuthService {
       final storedHashedPassword = accountData['password'] as String;
       final hashedPassword = _hashPassword(password, salt);
 
+      print('Stored salt: $salt');
+      print('Stored hashed password: $storedHashedPassword');
+      print('New hashed password: $hashedPassword');
+      print('Passwords match: ${hashedPassword == storedHashedPassword}');
+      print('==================');
+
       if (hashedPassword == storedHashedPassword) {
+        print('✅ Login successful!');
         return Account.fromMap(accountData);
       }
 
+      print('❌ Password mismatch!');
       return null; // Password doesn't match
     } catch (e) {
+      print('❌ Authentication error: $e');
       throw Exception('Authentication error: $e');
     }
   }
 
-  // Create new account
+  // Create new account - WITH DEBUG PRINTS
   Future<Account?> createAccount({
     required String username,
     required String email,
@@ -124,6 +140,15 @@ class AuthService {
       final hashedPassword = _hashPassword(password, salt);
       final accountNumber = _generateAccountNumber();
 
+      // 🐛 DEBUG: Print what we're storing
+      print('=== REGISTRATION DEBUG ===');
+      print('Email: $email');
+      print('Original Password: $password');
+      print('Salt: $salt');
+      print('Hashed Password: $hashedPassword');
+      print('Account Number: $accountNumber');
+      print('========================');
+
       // Create account data
       final accountData = {
         'username': username.trim(),
@@ -141,13 +166,140 @@ class AuthService {
       final accountId = await _dbHelper.insert('accounts', accountData);
 
       if (accountId > 0) {
+        print('✅ Account created with ID: $accountId');
+
+        // DEBUG: Show what was actually stored
+        await debugShowAllAccounts();
+
         // Return the created account
         return Account.fromMap({'account_id': accountId, ...accountData});
       }
 
       throw Exception('Failed to create account');
     } catch (e) {
+      print('❌ Account creation error: $e');
       throw Exception('Account creation error: $e');
+    }
+  }
+
+  // Reset password method
+  Future<bool> resetPassword(String email, String newPassword) async {
+    try {
+      // Validate new password
+      if (!isStrongPassword(newPassword)) {
+        throw Exception(
+          'Password must be at least 8 characters with uppercase, lowercase, and number',
+        );
+      }
+
+      // Check if email exists
+      final accounts = await _dbHelper.query(
+        'accounts',
+        where: 'email = ?',
+        whereArgs: [email.toLowerCase().trim()],
+      );
+
+      if (accounts.isEmpty) {
+        throw Exception('Account not found');
+      }
+
+      // Generate new salt and hash new password
+      final salt = _generateSalt();
+      final hashedPassword = _hashPassword(newPassword, salt);
+
+      print('=== PASSWORD RESET DEBUG ===');
+      print('Email: $email');
+      print('New Password: $newPassword');
+      print('New Salt: $salt');
+      print('New Hashed Password: $hashedPassword');
+      print('============================');
+
+      // Update password in database
+      final result = await _dbHelper.update(
+        'accounts',
+        {'password': hashedPassword, 'salt': salt},
+        where: 'email = ?',
+        whereArgs: [email.toLowerCase().trim()],
+      );
+
+      if (result > 0) {
+        print('✅ Password reset successful');
+        return true;
+      } else {
+        print('❌ Password reset failed');
+        return false;
+      }
+    } catch (e) {
+      print('❌ Password reset error: $e');
+      throw Exception('Password reset error: $e');
+    }
+  }
+
+  // Update account password (for change password functionality)
+  Future<bool> updatePassword(
+    int accountId,
+    String currentPassword,
+    String newPassword,
+  ) async {
+    try {
+      // Get account data
+      final accounts = await _dbHelper.query(
+        'accounts',
+        where: 'account_id = ?',
+        whereArgs: [accountId],
+      );
+
+      if (accounts.isEmpty) {
+        throw Exception('Account not found');
+      }
+
+      final accountData = accounts.first;
+      final salt = accountData['salt'] as String? ?? '';
+      final storedHashedPassword = accountData['password'] as String;
+      final currentHashedPassword = _hashPassword(currentPassword, salt);
+
+      // Verify current password
+      if (currentHashedPassword != storedHashedPassword) {
+        throw Exception('Current password is incorrect');
+      }
+
+      // Validate new password
+      if (!isStrongPassword(newPassword)) {
+        throw Exception(
+          'New password must be at least 8 characters with uppercase, lowercase, and number',
+        );
+      }
+
+      // Generate new salt and hash new password
+      final newSalt = _generateSalt();
+      final newHashedPassword = _hashPassword(newPassword, newSalt);
+
+      // Update password in database
+      final result = await _dbHelper.update(
+        'accounts',
+        {'password': newHashedPassword, 'salt': newSalt},
+        where: 'account_id = ?',
+        whereArgs: [accountId],
+      );
+
+      return result > 0;
+    } catch (e) {
+      throw Exception('Password update error: $e');
+    }
+  }
+
+  // DEBUG: Show all accounts in database
+  Future<void> debugShowAllAccounts() async {
+    try {
+      final accounts = await _dbHelper.query('accounts');
+      print('=== ALL ACCOUNTS IN DATABASE ===');
+      for (int i = 0; i < accounts.length; i++) {
+        print('Account $i: ${accounts[i]}');
+      }
+      print('Total accounts: ${accounts.length}');
+      print('===============================');
+    } catch (e) {
+      print('Error reading accounts: $e');
     }
   }
 
@@ -184,6 +336,42 @@ class AuthService {
     }
   }
 
+  // Get account by email
+  Future<Account?> getAccountByEmail(String email) async {
+    try {
+      final accounts = await _dbHelper.query(
+        'accounts',
+        where: 'email = ?',
+        whereArgs: [email.toLowerCase().trim()],
+      );
+
+      if (accounts.isNotEmpty) {
+        return Account.fromMap(accounts.first);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Error retrieving account: $e');
+    }
+  }
+
+  // Get account by account number
+  Future<Account?> getAccountByAccountNumber(String accountNumber) async {
+    try {
+      final accounts = await _dbHelper.query(
+        'accounts',
+        where: 'account_number = ?',
+        whereArgs: [accountNumber],
+      );
+
+      if (accounts.isNotEmpty) {
+        return Account.fromMap(accounts.first);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Error retrieving account: $e');
+    }
+  }
+
   // Get all accounts (admin function)
   Future<List<Account>> getAllAccounts() async {
     try {
@@ -191,6 +379,134 @@ class AuthService {
       return accountsData.map((data) => Account.fromMap(data)).toList();
     } catch (e) {
       throw Exception('Error retrieving accounts: $e');
+    }
+  }
+
+  // Update account profile
+  Future<bool> updateAccountProfile({
+    required int accountId,
+    String? username,
+    String? email,
+    String? phone,
+    String? profileImage,
+  }) async {
+    try {
+      final updateData = <String, dynamic>{};
+
+      if (username != null) updateData['username'] = username.trim();
+      if (email != null) {
+        if (!isValidEmail(email)) {
+          throw Exception('Invalid email format');
+        }
+        // Check if email is already taken by another account
+        final existingAccounts = await _dbHelper.query(
+          'accounts',
+          where: 'email = ? AND account_id != ?',
+          whereArgs: [email.toLowerCase().trim(), accountId],
+        );
+        if (existingAccounts.isNotEmpty) {
+          throw Exception('Email already exists');
+        }
+        updateData['email'] = email.toLowerCase().trim();
+      }
+      if (phone != null) {
+        if (!isValidPhone(phone)) {
+          throw Exception('Invalid phone format');
+        }
+        updateData['phone'] = phone.trim();
+      }
+      if (profileImage != null) updateData['profile_image'] = profileImage;
+
+      if (updateData.isEmpty) {
+        return true; // Nothing to update
+      }
+
+      final result = await _dbHelper.update(
+        'accounts',
+        updateData,
+        where: 'account_id = ?',
+        whereArgs: [accountId],
+      );
+
+      return result > 0;
+    } catch (e) {
+      throw Exception('Profile update error: $e');
+    }
+  }
+
+  // Delete account (admin function)
+  Future<bool> deleteAccount(int accountId) async {
+    try {
+      final result = await _dbHelper.delete(
+        'accounts',
+        where: 'account_id = ?',
+        whereArgs: [accountId],
+      );
+      return result > 0;
+    } catch (e) {
+      throw Exception('Error deleting account: $e');
+    }
+  }
+
+  // Get account statistics (admin function)
+  Future<Map<String, dynamic>> getAccountStatistics() async {
+    try {
+      final allAccounts = await _dbHelper.query('accounts');
+
+      final totalAccounts = allAccounts.length;
+      final checkingAccounts =
+          allAccounts.where((acc) => acc['account_type'] == 'Checking').length;
+      final savingsAccounts =
+          allAccounts.where((acc) => acc['account_type'] == 'Savings').length;
+
+      double totalBalance = 0.0;
+      for (final acc in allAccounts) {
+        totalBalance += (acc['balance'] as num).toDouble();
+      }
+
+      return {
+        'total_accounts': totalAccounts,
+        'checking_accounts': checkingAccounts,
+        'savings_accounts': savingsAccounts,
+        'total_balance': totalBalance,
+        'average_balance':
+            totalAccounts > 0 ? totalBalance / totalAccounts : 0.0,
+      };
+    } catch (e) {
+      throw Exception('Error getting statistics: $e');
+    }
+  }
+
+  // Verify account credentials (for sensitive operations)
+  Future<bool> verifyAccountCredentials(int accountId, String password) async {
+    try {
+      final accounts = await _dbHelper.query(
+        'accounts',
+        where: 'account_id = ?',
+        whereArgs: [accountId],
+      );
+
+      if (accounts.isEmpty) {
+        return false;
+      }
+
+      final accountData = accounts.first;
+      final salt = accountData['salt'] as String? ?? '';
+      final storedHashedPassword = accountData['password'] as String;
+      final hashedPassword = _hashPassword(password, salt);
+
+      return hashedPassword == storedHashedPassword;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Close database connection
+  Future<void> closeDatabase() async {
+    try {
+      await _dbHelper.close();
+    } catch (e) {
+      print('Error closing database: $e');
     }
   }
 }

@@ -106,24 +106,10 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
   }
+  // Update the _handleForgotPassword method in your login_screen.dart
 
   void _handleForgotPassword() {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Password Recovery'),
-            content: const Text(
-              'Password recovery feature will be available soon. Please contact support if you need assistance.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-    );
+    AppRoutes.navigateToForgotPassword(context);
   }
 
   void _handleCreateAccount() {
