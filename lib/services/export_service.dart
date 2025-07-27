@@ -422,7 +422,7 @@ class ExportService {
                       );
                     }).toList(),
               );
-            }).toList(),
+            }),
           ],
         ),
         if (data.tableData.length > 20)

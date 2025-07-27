@@ -59,7 +59,7 @@ class _ExportDialogState extends State<ExportDialog> {
               isDarkMode: isDarkMode,
               onTap: () => setState(() => _selectedType = type),
             );
-          }).toList(),
+          }),
 
           if (_savedPath != null) ...[
             const SizedBox(height: 16),
