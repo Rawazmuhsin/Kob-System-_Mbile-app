@@ -1,4 +1,4 @@
-// lib/routes/app_routes.dart - UPDATED VERSION WITH BALANCE ROUTE
+// lib/routes/app_routes.dart - UPDATED VERSION WITH MANAGE USERS SCREEN
 import 'package:flutter/material.dart';
 import '../screens/welcome_screen.dart';
 import '../screens/auth/login_screen.dart';
@@ -6,7 +6,8 @@ import '../screens/auth/register_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
 import '../screens/dashboard/dashboard_screen.dart';
 import '../screens/admin/admin_dashboard_screen.dart';
-import '../screens/balance/balance_screen.dart'; // ADD THIS IMPORT
+import '../screens/admin/manage_users_screen.dart'; // ADD THIS IMPORT
+import '../screens/balance/balance_screen.dart';
 
 class AppRoutes {
   // Route names
@@ -65,7 +66,7 @@ class AppRoutes {
           settings: settings,
         );
 
-      case balance: // ADD THIS CASE
+      case balance:
         return MaterialPageRoute(
           builder: (_) => const BalanceScreen(),
           settings: settings,
@@ -78,12 +79,9 @@ class AppRoutes {
           settings: settings,
         );
 
-      case adminUsers:
+      case adminUsers: // UPDATED TO USE ACTUAL SCREEN
         return MaterialPageRoute(
-          builder:
-              (_) => const Scaffold(
-                body: Center(child: Text('User Management - Coming Soon')),
-              ),
+          builder: (_) => const ManageUsersScreen(),
           settings: settings,
         );
 
