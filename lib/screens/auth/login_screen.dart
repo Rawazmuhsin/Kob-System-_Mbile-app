@@ -1,5 +1,4 @@
-// ignore_for_file: deprecated_member_use
-
+// lib/screens/auth/login_screen.dart - UPDATED VERSION
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants.dart';
@@ -9,6 +8,7 @@ import '../../widgets/input_field.dart';
 import '../../routes/app_routes.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../confirmation/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -25,6 +25,8 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _rememberMe = false;
   bool _showPassword = false;
   bool _isLoading = false;
+  UserType _detectedUserType = UserType.unknown;
+  String _userTypeMessage = '';
 
   @override
   void dispose() {
@@ -45,6 +47,47 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
+  // NEW: Auto-detect user type when email changes
+  Future<void> _onEmailChanged(String email) async {
+    if (email.isNotEmpty &&
+        RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final userType = await authProvider.checkEmailType(email);
+
+      setState(() {
+        _detectedUserType = userType;
+        _userTypeMessage = _getUserTypeMessage(userType);
+      });
+    } else {
+      setState(() {
+        _detectedUserType = UserType.unknown;
+        _userTypeMessage = '';
+      });
+    }
+  }
+
+  String _getUserTypeMessage(UserType userType) {
+    switch (userType) {
+      case UserType.admin:
+        return '🔐 Admin account detected';
+      case UserType.user:
+        return '👤 User account detected';
+      case UserType.unknown:
+        return '';
+    }
+  }
+
+  Color _getUserTypeColor(UserType userType) {
+    switch (userType) {
+      case UserType.admin:
+        return Colors.purple;
+      case UserType.user:
+        return AppColors.primaryGreen;
+      case UserType.unknown:
+        return Colors.grey;
+    }
+  }
+
   Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
@@ -54,6 +97,10 @@ class _LoginScreenState extends State<LoginScreen> {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
       try {
+        print('=== LOGIN ATTEMPT ===');
+        print('Email: ${_emailController.text.trim()}');
+        print('Detected Type: $_detectedUserType');
+
         final success = await authProvider.login(
           _emailController.text.trim(),
           _passwordController.text,
@@ -65,28 +112,61 @@ class _LoginScreenState extends State<LoginScreen> {
           });
 
           if (success) {
-            // Show success message with user's name
+            // Show success message based on user type
+            String welcomeMessage;
+            String redirectMessage;
+
+            if (authProvider.isAdmin) {
+              welcomeMessage =
+                  'Welcome back, ${authProvider.getCurrentUserDisplayName()}!';
+              redirectMessage = 'Redirecting to Admin Dashboard...';
+            } else {
+              welcomeMessage =
+                  'Welcome back, ${authProvider.getCurrentUserDisplayName()}!';
+              redirectMessage = 'Redirecting to Dashboard...';
+            }
+
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(
-                  'Welcome back, ${authProvider.currentAccount?.username ?? 'User'}!',
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(welcomeMessage),
+                    Text(
+                      redirectMessage,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
                 ),
-                backgroundColor: AppColors.primaryGreen,
-                duration: const Duration(seconds: 2),
+                backgroundColor:
+                    authProvider.isAdmin
+                        ? Colors.purple
+                        : AppColors.primaryGreen,
+                duration: const Duration(seconds: 3),
               ),
             );
 
-            // Navigate to dashboard
-            AppRoutes.navigateToDashboard(context);
+            // Navigate based on user type
+            if (authProvider.isAdmin) {
+              Navigator.pushReplacementNamed(context, '/admin/dashboard');
+            } else {
+              AppRoutes.navigateToDashboard(context);
+            }
           } else {
             // Show error message
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
+              SnackBar(
                 content: Text(
-                  'Invalid email or password. Please check your credentials and try again.',
+                  _detectedUserType == UserType.unknown
+                      ? 'Email not found in system. Please check your email or create an account.'
+                      : 'Invalid password. Please check your credentials and try again.',
                 ),
                 backgroundColor: Colors.red,
-                duration: Duration(seconds: 3),
+                duration: const Duration(seconds: 4),
               ),
             );
           }
@@ -108,7 +188,6 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
   }
-  // Update the _handleForgotPassword method in your login_screen.dart
 
   void _handleForgotPassword() {
     AppRoutes.navigateToForgotPassword(context);
@@ -311,24 +390,54 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           const SizedBox(height: 32),
 
-          // Email Field
-          InputField(
-            controller: _emailController,
-            label: 'Email Address',
-            hintText: 'Enter your email address',
-            keyboardType: TextInputType.emailAddress,
-            isDarkMode: isDarkMode,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter your email';
-              }
-              if (!RegExp(
-                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-              ).hasMatch(value)) {
-                return 'Please enter a valid email';
-              }
-              return null;
-            },
+          // Email Field with auto-detection
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              InputField(
+                controller: _emailController,
+                label: 'Email Address',
+                hintText: 'Enter your email address',
+                keyboardType: TextInputType.emailAddress,
+                isDarkMode: isDarkMode,
+                onChanged: _onEmailChanged,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your email';
+                  }
+                  if (!RegExp(
+                    r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                  ).hasMatch(value)) {
+                    return 'Please enter a valid email';
+                  }
+                  return null;
+                },
+              ),
+              // User type detection indicator
+              if (_userTypeMessage.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(
+                      _detectedUserType == UserType.admin
+                          ? Icons.admin_panel_settings
+                          : Icons.person,
+                      size: 16,
+                      color: _getUserTypeColor(_detectedUserType),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _userTypeMessage,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: _getUserTypeColor(_detectedUserType),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
           ),
           const SizedBox(height: 20),
 
@@ -355,9 +464,14 @@ class _LoginScreenState extends State<LoginScreen> {
           _buildFormOptions(isDarkMode),
           const SizedBox(height: 32),
 
-          // Login Button
+          // Login Button with user type styling
           CustomButton(
-            text: _isLoading ? 'Logging in...' : 'Login',
+            text:
+                _isLoading
+                    ? 'Logging in...'
+                    : _detectedUserType == UserType.admin
+                    ? 'Login as Admin'
+                    : 'Login',
             onPressed: _isLoading ? null : _handleLogin,
             isPrimary: true,
             isLoading: _isLoading,
@@ -382,12 +496,52 @@ class _LoginScreenState extends State<LoginScreen> {
           _buildDivider(isDarkMode),
           const SizedBox(height: 24),
 
-          // Create Account Button
-          CustomButton(
-            text: 'Create New Account',
-            onPressed: _handleCreateAccount,
-            isPrimary: false,
-          ),
+          // Create Account Button (only for non-admin detected)
+          if (_detectedUserType != UserType.admin)
+            CustomButton(
+              text: 'Create New Account',
+              onPressed: _handleCreateAccount,
+              isPrimary: false,
+            ),
+
+          // Admin login hint
+          if (_detectedUserType == UserType.unknown &&
+              _emailController.text.isEmpty)
+            Container(
+              margin: const EdgeInsets.only(top: 16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color:
+                    isDarkMode
+                        ? Colors.blue.withOpacity(0.1)
+                        : Colors.blue.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue.withOpacity(0.2)),
+              ),
+              child: Column(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Admin Access',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.blue,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Default Admin: rawazm@gmail.com / Rawaz111',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDarkMode ? Colors.white70 : AppColors.lightText,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
