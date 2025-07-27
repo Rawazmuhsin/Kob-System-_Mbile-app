@@ -1,7 +1,8 @@
-// lib/providers/auth_provider.dart
+// lib/providers/auth_provider.dart - UPDATED VERSION
 import 'package:flutter/foundation.dart';
 import '../models/user.dart';
 import '../models/account.dart';
+import '../models/admin.dart';
 import '../confirmation/auth_service.dart';
 import '../confirmation/login/login_confirmation.dart';
 import '../confirmation/signup/signup_confirmation.dart';
@@ -9,53 +10,77 @@ import '../confirmation/signup/signup_confirmation.dart';
 class AuthProvider with ChangeNotifier {
   User? _currentUser;
   Account? _currentAccount;
+  Admin? _currentAdmin;
   bool _isAuthenticated = false;
   bool _isLoading = false;
+  UserType _userType = UserType.unknown;
 
+  // Getters
   User? get currentUser => _currentUser;
   Account? get currentAccount => _currentAccount;
+  Admin? get currentAdmin => _currentAdmin;
   bool get isAuthenticated => _isAuthenticated;
   bool get isLoading => _isLoading;
+  UserType get userType => _userType;
+
+  // Check if current user is admin
+  bool get isAdmin => _userType == UserType.admin && _currentAdmin != null;
+  bool get isUser => _userType == UserType.user && _currentAccount != null;
 
   final AuthService _authService = AuthService.instance;
   final LoginConfirmation _loginConfirmation = LoginConfirmation.instance;
   final SignupConfirmation _signupConfirmation = SignupConfirmation.instance;
 
-  // Login method
+  // Universal login method - UPDATED
   Future<bool> login(String email, String password) async {
     _setLoading(true);
 
     try {
-      final result = await _loginConfirmation.performLogin(
-        email: email,
-        password: password,
-      );
+      print('=== UNIVERSAL LOGIN ATTEMPT ===');
+      print('Email: $email');
 
-      if (result.success && result.account != null) {
-        _currentAccount = result.account;
-        _currentUser = User(
-          userId: result.account!.accountId,
-          username: result.account!.username,
-          email: result.account!.email,
-        );
-        _isAuthenticated = true;
+      // Use the new universal authentication
+      final result = await _authService.authenticateUser(email, password);
+
+      if (result.success) {
+        _userType = result.userType;
+
+        if (result.userType == UserType.admin && result.admin != null) {
+          print('✅ Admin login successful');
+          _currentAdmin = result.admin;
+          _currentUser = User(
+            userId: result.admin!.adminId,
+            username: result.admin!.username,
+            email: result.admin!.email,
+          );
+          _isAuthenticated = true;
+        } else if (result.userType == UserType.user && result.account != null) {
+          print('✅ User login successful');
+          _currentAccount = result.account;
+          _currentUser = User(
+            userId: result.account!.accountId,
+            username: result.account!.username,
+            email: result.account!.email,
+          );
+          _isAuthenticated = true;
+        }
 
         _setLoading(false);
         notifyListeners();
         return true;
       } else {
+        print('❌ Login failed: ${result.errorMessage}');
         _setLoading(false);
-        debugPrint('Login failed: ${result.errorMessage}');
         return false;
       }
     } catch (e) {
+      print('❌ Login error: $e');
       _setLoading(false);
-      debugPrint('Login error: $e');
       return false;
     }
   }
 
-  // Register method - WITH IMPROVED ERROR HANDLING
+  // Register method - remains same for users only
   Future<RegisterResult> register({
     required String username,
     required String email,
@@ -67,7 +92,7 @@ class AuthProvider with ChangeNotifier {
     _setLoading(true);
 
     try {
-      print('=== REGISTRATION ATTEMPT ===');
+      print('=== USER REGISTRATION ATTEMPT ===');
       print('Username: $username');
       print('Email: $email');
       print('Phone: $phone');
@@ -85,15 +110,16 @@ class AuthProvider with ChangeNotifier {
       _setLoading(false);
 
       if (result.success && result.account != null) {
-        print('✅ Registration successful!');
+        print('✅ User registration successful!');
 
-        // Optionally auto-login after successful registration
+        // Auto-login after successful registration
         _currentAccount = result.account;
         _currentUser = User(
           userId: result.account!.accountId,
           username: result.account!.username,
           email: result.account!.email,
         );
+        _userType = UserType.user;
         _isAuthenticated = true;
         notifyListeners();
 
@@ -102,7 +128,7 @@ class AuthProvider with ChangeNotifier {
           message: 'Account created successfully!',
         );
       } else {
-        print('❌ Registration failed: ${result.errorMessage}');
+        print('❌ User registration failed: ${result.errorMessage}');
         return RegisterResult(
           success: false,
           message: result.errorMessage ?? 'Registration failed',
@@ -118,17 +144,19 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // Logout method
+  // Logout method - UPDATED to handle both user types
   void logout() {
     _currentUser = null;
     _currentAccount = null;
+    _currentAdmin = null;
     _isAuthenticated = false;
+    _userType = UserType.unknown;
     notifyListeners();
   }
 
-  // Update account balance
+  // Update account balance (for users only)
   Future<bool> updateBalance(double newBalance) async {
-    if (_currentAccount != null) {
+    if (_currentAccount != null && _userType == UserType.user) {
       try {
         final success = await _authService.updateAccountBalance(
           _currentAccount!.accountId!,
@@ -149,9 +177,9 @@ class AuthProvider with ChangeNotifier {
     return false;
   }
 
-  // Refresh current account data
+  // Refresh current account data (for users)
   Future<void> refreshAccountData() async {
-    if (_currentAccount?.accountId != null) {
+    if (_currentAccount?.accountId != null && _userType == UserType.user) {
       try {
         final updatedAccount = await _authService.getAccountById(
           _currentAccount!.accountId!,
@@ -166,22 +194,54 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // Check if email exists (for validation) - WITH BETTER ERROR HANDLING
+  // Check if email exists and return user type - NEW METHOD
+  Future<UserType> checkEmailType(String email) async {
+    try {
+      return await _authService.detectUserType(email);
+    } catch (e) {
+      print('❌ Check email type error: $e');
+      return UserType.unknown;
+    }
+  }
+
+  // Check if email exists (for validation) - UPDATED
   Future<bool> checkEmailExists(String email) async {
     try {
-      print('=== EMAIL CHECK DEBUG ===');
-      print('Checking email: $email');
-
-      final result = await _authService.emailExists(email);
-      print('Email exists result: $result');
-      print('========================');
-
-      return result;
+      final userType = await _authService.detectUserType(email);
+      return userType != UserType.unknown;
     } catch (e) {
       print('❌ Check email exists error: $e');
-      // Return false instead of throwing error to prevent blocking registration
       return false;
     }
+  }
+
+  // Initialize system - NEW METHOD
+  Future<void> initializeSystem() async {
+    try {
+      await _authService.initializeSystem();
+    } catch (e) {
+      print('❌ Initialize system error: $e');
+    }
+  }
+
+  // Get current user display name - NEW METHOD
+  String getCurrentUserDisplayName() {
+    if (_userType == UserType.admin && _currentAdmin != null) {
+      return _currentAdmin!.fullName;
+    } else if (_userType == UserType.user && _currentAccount != null) {
+      return _currentAccount!.username;
+    }
+    return 'User';
+  }
+
+  // Get current user role - NEW METHOD
+  String getCurrentUserRole() {
+    if (_userType == UserType.admin && _currentAdmin != null) {
+      return _currentAdmin!.role.toUpperCase();
+    } else if (_userType == UserType.user && _currentAccount != null) {
+      return _currentAccount!.accountType.toUpperCase();
+    }
+    return 'UNKNOWN';
   }
 
   // Validate login form
