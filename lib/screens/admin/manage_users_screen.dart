@@ -421,24 +421,25 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
 
   Widget _buildEmptyState(bool isDarkMode) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               Icons.people_outline,
-              size: 64,
+              size: 48,
               color:
                   isDarkMode
                       ? Colors.white.withOpacity(0.3)
                       : AppColors.lightText.withOpacity(0.5),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Text(
               'No users found',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color:
                     isDarkMode
@@ -446,11 +447,11 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                         : AppColors.lightText,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
               'No user accounts match your search criteria',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 13,
                 color:
                     isDarkMode
                         ? Colors.white.withOpacity(0.5)

@@ -1,4 +1,4 @@
-// lib/routes/app_routes.dart - UPDATED VERSION WITH MANAGE USERS SCREEN
+// lib/routes/app_routes.dart - UPDATED VERSION WITH MANAGE TRANSACTIONS SCREEN
 import 'package:flutter/material.dart';
 import '../screens/welcome_screen.dart';
 import '../screens/auth/login_screen.dart';
@@ -6,7 +6,8 @@ import '../screens/auth/register_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
 import '../screens/dashboard/dashboard_screen.dart';
 import '../screens/admin/admin_dashboard_screen.dart';
-import '../screens/admin/manage_users_screen.dart'; // ADD THIS IMPORT
+import '../screens/admin/manage_users_screen.dart';
+import '../screens/admin/manage_transactions_screen.dart'; // ADD THIS IMPORT
 import '../screens/balance/balance_screen.dart';
 
 class AppRoutes {
@@ -85,14 +86,9 @@ class AppRoutes {
           settings: settings,
         );
 
-      case adminTransactions:
+      case adminTransactions: // UPDATED TO USE ACTUAL SCREEN
         return MaterialPageRoute(
-          builder:
-              (_) => const Scaffold(
-                body: Center(
-                  child: Text('Transaction Management - Coming Soon'),
-                ),
-              ),
+          builder: (_) => const ManageTransactionsScreen(),
           settings: settings,
         );
 
