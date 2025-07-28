@@ -1,4 +1,4 @@
-// lib/routes/app_routes.dart - UPDATED VERSION WITH MANAGE TRANSACTIONS SCREEN
+// lib/routes/app_routes.dart - COMPLETE UPDATED VERSION WITH QR FUNCTIONALITY
 import 'package:flutter/material.dart';
 import '../screens/welcome_screen.dart';
 import '../screens/auth/login_screen.dart';
@@ -7,9 +7,12 @@ import '../screens/auth/forgot_password_screen.dart';
 import '../screens/dashboard/dashboard_screen.dart';
 import '../screens/admin/admin_dashboard_screen.dart';
 import '../screens/admin/manage_users_screen.dart';
-import '../screens/admin/manage_transactions_screen.dart'; // ADD THIS IMPORT
+import '../screens/admin/manage_transactions_screen.dart';
 import '../screens/balance/balance_screen.dart';
 import '../screens/admin/transaction_history_screen.dart';
+import '../screens/qr/qr_display_screen.dart';
+import '../screens/qr/qr_scanner_screen.dart';
+import '../screens/qr/qr_export_screen.dart';
 
 class AppRoutes {
   // Route names
@@ -24,12 +27,14 @@ class AppRoutes {
   static const String transfer = '/transfer';
   static const String transactions = '/transactions';
   static const String qrDisplay = '/qr-display';
+  static const String qrScanner = '/qr-scanner';
   static const String qrExport = '/qr-export';
 
   // Admin routes
   static const String adminDashboard = '/admin/dashboard';
   static const String adminUsers = '/admin/users';
   static const String adminTransactions = '/admin/transactions';
+  static const String adminTransactionHistory = '/admin/transaction-history';
   static const String adminApprovals = '/admin/approvals';
   static const String adminReports = '/admin/reports';
   static const String adminAudit = '/admin/audit';
@@ -74,6 +79,29 @@ class AppRoutes {
           settings: settings,
         );
 
+      // QR Code Routes
+      case qrDisplay:
+        return MaterialPageRoute(
+          builder: (_) => const QRDisplayScreen(),
+          settings: settings,
+        );
+
+      case qrScanner:
+        final args = settings.arguments as Map<String, dynamic>? ?? {};
+        return MaterialPageRoute(
+          builder:
+              (_) => QRScannerScreen(
+                transactionType: args['transaction_type'] ?? 'transfer',
+              ),
+          settings: settings,
+        );
+
+      case qrExport:
+        return MaterialPageRoute(
+          builder: (_) => const QRExportScreen(),
+          settings: settings,
+        );
+
       // Admin routes
       case adminDashboard:
         return MaterialPageRoute(
@@ -81,15 +109,21 @@ class AppRoutes {
           settings: settings,
         );
 
-      case adminUsers: // UPDATED TO USE ACTUAL SCREEN
+      case adminUsers:
         return MaterialPageRoute(
           builder: (_) => const ManageUsersScreen(),
           settings: settings,
         );
 
-      case adminTransactions: // UPDATED TO USE ACTUAL SCREEN
+      case adminTransactions:
         return MaterialPageRoute(
           builder: (_) => const ManageTransactionsScreen(),
+          settings: settings,
+        );
+
+      case adminTransactionHistory:
+        return MaterialPageRoute(
+          builder: (_) => const TransactionHistoryScreen(),
           settings: settings,
         );
 
@@ -129,7 +163,7 @@ class AppRoutes {
           settings: settings,
         );
 
-      // Add placeholder routes for other screens
+      // Transaction screens - Coming Soon
       case deposit:
         return MaterialPageRoute(
           builder:
@@ -163,20 +197,6 @@ class AppRoutes {
               (_) => const Scaffold(
                 body: Center(child: Text('Transactions Screen - Coming Soon')),
               ),
-          settings: settings,
-        );
-
-      case qrDisplay:
-        return MaterialPageRoute(
-          builder:
-              (_) => const Scaffold(
-                body: Center(child: Text('QR Display Screen - Coming Soon')),
-              ),
-          settings: settings,
-        );
-      case adminTransactionHistory:
-        return MaterialPageRoute(
-          builder: (_) => const TransactionHistoryScreen(),
           settings: settings,
         );
 
@@ -234,8 +254,21 @@ class AppRoutes {
     Navigator.pushNamed(context, transactions);
   }
 
+  // QR Code navigation helpers
   static void navigateToQrDisplay(BuildContext context) {
     Navigator.pushNamed(context, qrDisplay);
+  }
+
+  static Future<Map<String, dynamic>?> navigateToQrScanner(
+    BuildContext context,
+    String transactionType,
+  ) async {
+    final result = await Navigator.pushNamed(
+      context,
+      qrScanner,
+      arguments: {'transaction_type': transactionType},
+    );
+    return result as Map<String, dynamic>?;
   }
 
   static void navigateToQrExport(BuildContext context) {
@@ -249,6 +282,10 @@ class AppRoutes {
 
   static void navigateToAdminTransactions(BuildContext context) {
     Navigator.pushNamed(context, adminTransactions);
+  }
+
+  static void navigateToAdminTransactionHistory(BuildContext context) {
+    Navigator.pushNamed(context, adminTransactionHistory);
   }
 
   static void navigateToAdminApprovals(BuildContext context) {
@@ -285,6 +322,4 @@ class AppRoutes {
   static void pushAndClearStack(BuildContext context, String routeName) {
     Navigator.pushNamedAndRemoveUntil(context, routeName, (route) => false);
   }
-
-  static const String adminTransactionHistory = '/admin/transaction-history';
 }

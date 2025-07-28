@@ -10,7 +10,7 @@ import 'providers/auth_provider.dart';
 import 'providers/forgot_password_provider.dart';
 import 'providers/dashboard_provider.dart';
 import 'providers/admin_provider.dart';
-import 'providers/balance_provider.dart'; // ADD THIS IMPORT
+import 'providers/balance_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
