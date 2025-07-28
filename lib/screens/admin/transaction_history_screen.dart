@@ -4,14 +4,10 @@ import 'package:provider/provider.dart';
 import '../../core/constants.dart';
 import '../../providers/admin_provider.dart';
 import '../../widgets/admin/admin_navigation_drawer.dart';
-import '../../widgets/admin/transaction_card_widget.dart';
 import '../../widgets/admin/transaction_details_widget.dart';
-import '../../widgets/admin/transactions_filter_widget.dart';
-import '../../widgets/admin/transactions_stats_widget.dart';
-import '../../widgets/export_dialog.dart';
 import '../../models/transaction.dart';
 import '../../models/account.dart';
-import '../../services/export_service.dart';
+import '../../routes/app_routes.dart';
 
 class TransactionHistoryScreen extends StatefulWidget {
   const TransactionHistoryScreen({super.key});
@@ -22,13 +18,11 @@ class TransactionHistoryScreen extends StatefulWidget {
 }
 
 class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
-  final TextEditingController _searchController = TextEditingController();
-  List<Transaction> _filteredTransactions = [];
+  List<Transaction> _transactions = [];
   Transaction? _selectedTransaction;
   Account? _selectedTransactionUser;
-  String _selectedStatus = 'all';
-  String _selectedType = 'all';
   Map<int, Account> _userAccounts = {};
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -36,111 +30,34 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
     _loadData();
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
   void _loadData() {
+    setState(() => _isLoading = true);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final adminProvider = Provider.of<AdminProvider>(context, listen: false);
 
-      // Load both transactions and user accounts
       Future.wait([
         adminProvider.loadAllTransactions(),
         adminProvider.loadUserAccounts(),
       ]).then((_) {
-        // Create user accounts map for quick lookup
         setState(() {
           _userAccounts = {
             for (var account in adminProvider.userAccounts)
               account.accountId!: account,
           };
-          _filteredTransactions = List.from(adminProvider.allTransactions);
+          _transactions = List.from(adminProvider.allTransactions);
+
+          // Sort by date (newest first)
+          _transactions.sort((a, b) {
+            final aDate = a.transactionDate ?? DateTime.now();
+            final bDate = b.transactionDate ?? DateTime.now();
+            return bDate.compareTo(aDate);
+          });
+
+          _isLoading = false;
         });
-        _applyFilters();
       });
     });
-  }
-
-  void _applyFilters() {
-    final adminProvider = Provider.of<AdminProvider>(context, listen: false);
-    setState(() {
-      _filteredTransactions =
-          adminProvider.allTransactions.where((transaction) {
-            // Status filter
-            if (_selectedStatus != 'all' &&
-                transaction.status.toLowerCase() !=
-                    _selectedStatus.toLowerCase()) {
-              return false;
-            }
-
-            // Type filter
-            if (_selectedType != 'all' &&
-                transaction.transactionType?.toLowerCase() !=
-                    _selectedType.toLowerCase()) {
-              return false;
-            }
-
-            // Search filter
-            if (_searchController.text.isNotEmpty) {
-              final query = _searchController.text.toLowerCase();
-              final user = _userAccounts[transaction.accountId];
-
-              return (transaction.description?.toLowerCase().contains(query) ??
-                      false) ||
-                  transaction.amount.toString().contains(query) ||
-                  (user?.username.toLowerCase().contains(query) ?? false) ||
-                  (user?.email?.toLowerCase().contains(query) ?? false);
-            }
-
-            return true;
-          }).toList();
-
-      // Sort by date (newest first)
-      _filteredTransactions.sort((a, b) {
-        final aDate = a.transactionDate ?? DateTime.now();
-        final bDate = b.transactionDate ?? DateTime.now();
-        return bDate.compareTo(aDate);
-      });
-    });
-  }
-
-  void _onSearchChanged(String query) {
-    _applyFilters();
-  }
-
-  void _onStatusChanged(String status) {
-    setState(() {
-      _selectedStatus = status;
-    });
-    _applyFilters();
-  }
-
-  void _onTypeChanged(String type) {
-    setState(() {
-      _selectedType = type;
-    });
-    _applyFilters();
-  }
-
-  void _clearFilters() {
-    setState(() {
-      _selectedStatus = 'all';
-      _selectedType = 'all';
-      _searchController.clear();
-    });
-    _applyFilters();
-  }
-
-  void _onStatTap(String statType) {
-    setState(() {
-      _selectedStatus = statType;
-      _selectedType = 'all';
-      _searchController.clear();
-    });
-    _applyFilters();
   }
 
   void _showTransactionDetails(Transaction transaction) {
@@ -157,345 +74,389 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
     });
   }
 
+  void _navigateToManageTransactions() {
+    Navigator.pushReplacementNamed(context, AppRoutes.adminTransactions);
+  }
+
+  String _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'orange';
+      case 'approved':
+        return 'green';
+      case 'rejected':
+        return 'red';
+      default:
+        return 'grey';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDarkMode ? Colors.grey[900] : Colors.grey[100],
-      appBar: _buildAppBar(isDarkMode),
-      drawer: const AdminNavigationDrawer(
-        selectedIndex: 1,
-      ), // Adjust index as needed
-      body: Consumer<AdminProvider>(
-        builder: (context, adminProvider, child) {
-          if (_selectedTransaction != null) {
-            // Reuse existing TransactionDetailsWidget
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: TransactionDetailsWidget(
+      backgroundColor:
+          isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
+      appBar: AppBar(
+        backgroundColor: AppColors.primaryDark,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          onPressed: _navigateToManageTransactions,
+          icon: const Icon(Icons.arrow_back),
+          tooltip: 'Back to Manage Transactions',
+        ),
+        title: Text(
+          _selectedTransaction == null
+              ? 'Transaction History'
+              : 'Transaction #${_selectedTransaction!.transactionId}',
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+          ),
+        ),
+        actions: [
+          if (_selectedTransaction == null) ...[
+            IconButton(
+              onPressed: _navigateToManageTransactions,
+              icon: const Icon(Icons.settings),
+              tooltip: 'Manage Transactions',
+            ),
+            IconButton(
+              onPressed: _loadData,
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Refresh',
+            ),
+          ] else ...[
+            IconButton(
+              onPressed: _closeTransactionDetails,
+              icon: const Icon(Icons.close),
+              tooltip: 'Close Details',
+            ),
+          ],
+        ],
+      ),
+      drawer: const AdminNavigationDrawer(selectedIndex: 2), // Set selectedIndex to 2 for Transactions
+      body:
+          _selectedTransaction != null
+              ? TransactionDetailsWidget(
                 transaction: _selectedTransaction!,
                 userName: _selectedTransactionUser?.username,
                 userEmail: _selectedTransactionUser?.email,
-              ),
-            );
-          }
-          return _buildTransactionsHistoryView(
-            context,
-            adminProvider,
-            isDarkMode,
-          );
-        },
-      ),
+              )
+              : _buildTransactionTable(isDarkMode),
     );
   }
 
-  PreferredSizeWidget _buildAppBar(bool isDarkMode) {
-    return AppBar(
-      backgroundColor:
-          isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
-      foregroundColor: isDarkMode ? Colors.white : AppColors.darkText,
-      elevation: 0,
-      title: Text(
-        _selectedTransaction == null
-            ? 'Transaction History'
-            : 'Transaction #${_selectedTransaction!.transactionId}',
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.w800,
-          color: isDarkMode ? Colors.white : AppColors.darkText,
-        ),
-      ),
-      actions: [
-        if (_selectedTransaction == null) ...[
-          IconButton(
-            onPressed: _exportTransactionsData,
-            icon: const Icon(Icons.download),
-            tooltip: 'Export Transactions Data',
+  Widget _buildTransactionTable(bool isDarkMode) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_transactions.isEmpty) {
+      return _buildEmptyState(isDarkMode);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'All Transactions',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: isDarkMode ? Colors.white : AppColors.darkText,
+            ),
           ),
-          IconButton(
-            onPressed: () => _loadData(),
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
-          ),
-        ] else ...[
-          IconButton(
-            onPressed: _closeTransactionDetails,
-            icon: const Icon(Icons.close),
-            tooltip: 'Close Details',
+          const SizedBox(height: 16),
+          Expanded(
+            child: Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: SingleChildScrollView(
+                    child: DataTable(
+                      columnSpacing: 20,
+                      horizontalMargin: 16,
+                      headingRowColor: MaterialStateProperty.all(
+                        isDarkMode
+                            ? AppColors.primaryDark.withAlpha(51) // 0.2 opacity
+                            : AppColors.primaryDark.withAlpha(
+                              26,
+                            ), // 0.1 opacity
+                      ),
+                      columns: [
+                        DataColumn(
+                          label: Text(
+                            'ID',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  isDarkMode
+                                      ? Colors.white
+                                      : AppColors.darkText,
+                            ),
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            'User',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  isDarkMode
+                                      ? Colors.white
+                                      : AppColors.darkText,
+                            ),
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            'Type',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  isDarkMode
+                                      ? Colors.white
+                                      : AppColors.darkText,
+                            ),
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            'Amount',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  isDarkMode
+                                      ? Colors.white
+                                      : AppColors.darkText,
+                            ),
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            'Status',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  isDarkMode
+                                      ? Colors.white
+                                      : AppColors.darkText,
+                            ),
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            'Date',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  isDarkMode
+                                      ? Colors.white
+                                      : AppColors.darkText,
+                            ),
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            'Action',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  isDarkMode
+                                      ? Colors.white
+                                      : AppColors.darkText,
+                            ),
+                          ),
+                        ),
+                      ],
+                      rows:
+                          _transactions.map((transaction) {
+                            final user = _userAccounts[transaction.accountId];
+                            final statusColor = _getStatusColor(
+                              transaction.status,
+                            );
+
+                            return DataRow(
+                              cells: [
+                                DataCell(
+                                  Text(
+                                    '#${transaction.transactionId ?? 'N/A'}',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                      color:
+                                          isDarkMode
+                                              ? Colors.white70
+                                              : AppColors.darkText,
+                                    ),
+                                  ),
+                                ),
+                                DataCell(
+                                  Text(
+                                    user?.username ?? 'Unknown',
+                                    style: TextStyle(
+                                      color:
+                                          isDarkMode
+                                              ? Colors.white70
+                                              : AppColors.darkText,
+                                    ),
+                                  ),
+                                ),
+                                DataCell(
+                                  Text(
+                                    transaction.transactionType ?? 'N/A',
+                                    style: TextStyle(
+                                      color:
+                                          isDarkMode
+                                              ? Colors.white70
+                                              : AppColors.darkText,
+                                    ),
+                                  ),
+                                ),
+                                DataCell(
+                                  Text(
+                                    '\$${transaction.amount.toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                      color:
+                                          isDarkMode
+                                              ? Colors.white70
+                                              : AppColors.darkText,
+                                    ),
+                                  ),
+                                ),
+                                DataCell(
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Color(
+                                        statusColor == 'green'
+                                            ? 0xFF10B981
+                                            : statusColor == 'orange'
+                                            ? 0xFFF59E0B
+                                            : statusColor == 'red'
+                                            ? 0xFFEF4444
+                                            : 0xFF64748B,
+                                      ).withAlpha(51), // 0.2 opacity
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      transaction.status,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(
+                                          statusColor == 'green'
+                                              ? 0xFF10B981
+                                              : statusColor == 'orange'
+                                              ? 0xFFF59E0B
+                                              : statusColor == 'red'
+                                              ? 0xFFEF4444
+                                              : 0xFF64748B,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                DataCell(
+                                  Text(
+                                    transaction.transactionDate != null
+                                        ? '${transaction.transactionDate!.year}-${transaction.transactionDate!.month.toString().padLeft(2, '0')}-${transaction.transactionDate!.day.toString().padLeft(2, '0')}'
+                                        : 'N/A',
+                                    style: TextStyle(
+                                      color:
+                                          isDarkMode
+                                              ? Colors.white70
+                                              : AppColors.darkText,
+                                    ),
+                                  ),
+                                ),
+                                DataCell(
+                                  ElevatedButton(
+                                    onPressed:
+                                        () => _showTransactionDetails(
+                                          transaction,
+                                        ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primaryDark,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8,
+                                      ),
+                                      minimumSize: const Size(80, 32),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    child: const Text('Details'),
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
-      ],
-    );
-  }
-
-  Widget _buildTransactionsHistoryView(
-    BuildContext context,
-    AdminProvider adminProvider,
-    bool isDarkMode,
-  ) {
-    return Column(
-      children: [
-        // Reuse existing TransactionsStatsWidget
-        TransactionsStatsWidget(
-          stats: _getTransactionStats(),
-          onStatTap: _onStatTap,
-        ),
-
-        // Reuse existing TransactionsFilterWidget
-        TransactionsFilterWidget(
-          searchController: _searchController,
-          onSearchChanged: _onSearchChanged,
-          selectedStatus: _selectedStatus,
-          selectedType: _selectedType,
-          onStatusChanged: _onStatusChanged,
-          onTypeChanged: _onTypeChanged,
-          totalTransactions: _filteredTransactions.length,
-          onClearFilters: _clearFilters,
-        ),
-
-        // Transactions List
-        Expanded(
-          child:
-              adminProvider.isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _filteredTransactions.isEmpty
-                  ? _buildEmptyState(isDarkMode)
-                  : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _filteredTransactions.length,
-                    itemBuilder: (context, index) {
-                      final transaction = _filteredTransactions[index];
-                      final user = _userAccounts[transaction.accountId];
-
-                      // Reuse existing TransactionCardWidget but without approval actions
-                      return TransactionCardWidget(
-                        transaction: transaction,
-                        userName: user?.username,
-                        onApprove: null, // No approval actions in history view
-                        onReject: null, // No rejection actions in history view
-                        onViewDetails:
-                            () => _showTransactionDetails(transaction),
-                      );
-                    },
-                  ),
-        ),
-      ],
+      ),
     );
   }
 
   Widget _buildEmptyState(bool isDarkMode) {
     return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.receipt_long_outlined,
-              size: 48,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.history_outlined,
+            size: 64,
+            color:
+                isDarkMode
+                    ? Colors.white.withAlpha(77) // 0.3 opacity
+                    : AppColors.lightText.withAlpha(128), // 0.5 opacity
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No transaction history',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
               color:
                   isDarkMode
-                      ? Colors.white.withOpacity(0.3)
-                      : AppColors.lightText.withOpacity(0.5),
+                      ? Colors.white.withAlpha(179) // 0.7 opacity
+                      : AppColors.lightText,
             ),
-            const SizedBox(height: 12),
-            Text(
-              'No transactions found',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color:
-                    isDarkMode
-                        ? Colors.white.withOpacity(0.7)
-                        : AppColors.lightText,
-              ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Your transaction history will appear here',
+            style: TextStyle(
+              fontSize: 14,
+              color:
+                  isDarkMode
+                      ? Colors.white.withAlpha(128) // 0.5 opacity
+                      : AppColors.lightText.withAlpha(179), // 0.7 opacity
             ),
-            const SizedBox(height: 6),
-            Text(
-              'No transactions match your current filters',
-              style: TextStyle(
-                fontSize: 13,
-                color:
-                    isDarkMode
-                        ? Colors.white.withOpacity(0.5)
-                        : AppColors.lightText.withOpacity(0.7),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            TextButton.icon(
-              onPressed: _clearFilters,
-              icon: const Icon(Icons.clear_all, size: 18),
-              label: const Text('Clear Filters'),
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.primaryGreen,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
-  }
-
-  // Reuse export functionality from ExportDialogHelper
-  Future<void> _exportTransactionsData() async {
-    final adminProvider = Provider.of<AdminProvider>(context, listen: false);
-
-    final exportData = ExportData(
-      title: 'Transaction History Report',
-      subtitle: 'Complete transaction history with filters applied',
-      userData: {
-        'admin_name': adminProvider.currentAdmin?.fullName ?? 'Administrator',
-        'export_date': DateTime.now().toString().split(' ')[0],
-        'total_transactions': _filteredTransactions.length.toString(),
-        'filters_applied':
-            '${_selectedStatus != 'all' ? 'Status: $_selectedStatus, ' : ''}${_selectedType != 'all' ? 'Type: $_selectedType, ' : ''}${_searchController.text.isNotEmpty ? 'Search: ${_searchController.text}' : ''}',
-      },
-      tableData:
-          _filteredTransactions.map((transaction) {
-            final user = _userAccounts[transaction.accountId];
-            return {
-              'transaction_id': '#${transaction.transactionId ?? 'N/A'}',
-              'user_name': user?.username ?? 'Unknown User',
-              'type': transaction.transactionType ?? 'Unknown',
-              'amount': '\$${transaction.amount.toStringAsFixed(2)}',
-              'status': transaction.status,
-              'description': transaction.description ?? 'No description',
-              'date':
-                  transaction.transactionDate?.toString().split(' ')[0] ??
-                  'N/A',
-            };
-          }).toList(),
-      headers: [
-        'Transaction ID',
-        'User Name',
-        'Type',
-        'Amount',
-        'Status',
-        'Description',
-        'Date',
-      ],
-      summary: _calculateTransactionsSummary(),
-    );
-
-    // Reuse existing ExportDialogHelper
-    ExportDialogHelper.show(
-      context: context,
-      exportData: exportData,
-      title: 'Export Transaction History',
-    );
-  }
-
-  Map<String, String> _calculateTransactionsSummary() {
-    final totalAmount = _filteredTransactions.fold(
-      0.0,
-      (sum, t) => sum + t.amount,
-    );
-    final pendingCount =
-        _filteredTransactions
-            .where((t) => t.status.toLowerCase() == 'pending')
-            .length;
-    final approvedCount =
-        _filteredTransactions
-            .where((t) => t.status.toLowerCase() == 'approved')
-            .length;
-    final rejectedCount =
-        _filteredTransactions
-            .where((t) => t.status.toLowerCase() == 'rejected')
-            .length;
-
-    return {
-      'Total Transactions': _filteredTransactions.length.toString(),
-      'Total Volume': '\$${totalAmount.toStringAsFixed(2)}',
-      'Pending': pendingCount.toString(),
-      'Approved': approvedCount.toString(),
-      'Rejected': rejectedCount.toString(),
-      'Average Amount':
-          _filteredTransactions.isNotEmpty
-              ? '\$${(totalAmount / _filteredTransactions.length).toStringAsFixed(2)}'
-              : '\$0.00',
-    };
-  }
-
-  // Reuse the stats calculation logic from AdminProvider
-  Map<String, dynamic> _getTransactionStats() {
-    final allTransactions =
-        Provider.of<AdminProvider>(context, listen: false).allTransactions;
-
-    final totalVolume = allTransactions.fold(0.0, (sum, t) => sum + t.amount);
-    final averageAmount =
-        allTransactions.isNotEmpty ? totalVolume / allTransactions.length : 0.0;
-
-    final pendingTransactions =
-        allTransactions
-            .where((t) => t.status.toLowerCase() == 'pending')
-            .toList();
-    final approvedTransactions =
-        allTransactions
-            .where((t) => t.status.toLowerCase() == 'approved')
-            .toList();
-    final rejectedTransactions =
-        allTransactions
-            .where((t) => t.status.toLowerCase() == 'rejected')
-            .toList();
-
-    final pendingVolume = pendingTransactions.fold(
-      0.0,
-      (sum, t) => sum + t.amount,
-    );
-    final approvedVolume = approvedTransactions.fold(
-      0.0,
-      (sum, t) => sum + t.amount,
-    );
-    final rejectedVolume = rejectedTransactions.fold(
-      0.0,
-      (sum, t) => sum + t.amount,
-    );
-
-    return {
-      'total': {
-        'count': allTransactions.length,
-        'volume': totalVolume,
-        'average': averageAmount,
-        'label': 'Total',
-        'color': Colors.blue,
-      },
-      'pending': {
-        'count': pendingTransactions.length,
-        'volume': pendingVolume,
-        'average':
-            pendingTransactions.isNotEmpty
-                ? pendingVolume / pendingTransactions.length
-                : 0.0,
-        'label': 'Pending',
-        'color': Colors.orange,
-      },
-      'approved': {
-        'count': approvedTransactions.length,
-        'volume': approvedVolume,
-        'average':
-            approvedTransactions.isNotEmpty
-                ? approvedVolume / approvedTransactions.length
-                : 0.0,
-        'label': 'Approved',
-        'color': Colors.green,
-      },
-      'rejected': {
-        'count': rejectedTransactions.length,
-        'volume': rejectedVolume,
-        'average':
-            rejectedTransactions.isNotEmpty
-                ? rejectedVolume / rejectedTransactions.length
-                : 0.0,
-        'label': 'Rejected',
-        'color': Colors.red,
-      },
-    };
   }
 }

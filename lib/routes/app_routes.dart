@@ -9,6 +9,7 @@ import '../screens/admin/admin_dashboard_screen.dart';
 import '../screens/admin/manage_users_screen.dart';
 import '../screens/admin/manage_transactions_screen.dart'; // ADD THIS IMPORT
 import '../screens/balance/balance_screen.dart';
+import '../screens/admin/transaction_history_screen.dart';
 
 class AppRoutes {
   // Route names
@@ -173,6 +174,11 @@ class AppRoutes {
               ),
           settings: settings,
         );
+      case adminTransactionHistory:
+        return MaterialPageRoute(
+          builder: (_) => const TransactionHistoryScreen(),
+          settings: settings,
+        );
 
       default:
         return MaterialPageRoute(
@@ -279,4 +285,6 @@ class AppRoutes {
   static void pushAndClearStack(BuildContext context, String routeName) {
     Navigator.pushNamedAndRemoveUntil(context, routeName, (route) => false);
   }
+
+  static const String adminTransactionHistory = '/admin/transaction-history';
 }

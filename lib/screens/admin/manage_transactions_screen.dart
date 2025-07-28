@@ -48,12 +48,10 @@ class _ManageTransactionsScreenState extends State<ManageTransactionsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final adminProvider = Provider.of<AdminProvider>(context, listen: false);
 
-      // Load both transactions and user accounts
       Future.wait([
         adminProvider.loadAllTransactions(),
         adminProvider.loadUserAccounts(),
       ]).then((_) {
-        // Create user accounts map for quick lookup
         setState(() {
           _userAccounts = {
             for (var account in adminProvider.userAccounts)
@@ -109,21 +107,14 @@ class _ManageTransactionsScreenState extends State<ManageTransactionsScreen> {
     });
   }
 
-  void _onSearchChanged(String query) {
-    _applyFilters();
-  }
-
+  void _onSearchChanged(String query) => _applyFilters();
   void _onStatusChanged(String status) {
-    setState(() {
-      _selectedStatus = status;
-    });
+    setState(() => _selectedStatus = status);
     _applyFilters();
   }
 
   void _onTypeChanged(String type) {
-    setState(() {
-      _selectedType = type;
-    });
+    setState(() => _selectedType = type);
     _applyFilters();
   }
 
@@ -160,37 +151,34 @@ class _ManageTransactionsScreenState extends State<ManageTransactionsScreen> {
   }
 
   Future<void> _approveTransaction(Transaction transaction) async {
-    final adminProvider = Provider.of<AdminProvider>(context, listen: false);
-    final success = await adminProvider.approveTransaction(
-      transaction.transactionId!,
-    );
-
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Transaction #${transaction.transactionId} approved successfully',
-          ),
-          backgroundColor: AppColors.primaryGreen,
-        ),
+    try {
+      final adminProvider = Provider.of<AdminProvider>(context, listen: false);
+      final success = await adminProvider.approveTransaction(
+        transaction.transactionId!,
       );
-      _loadData();
-      if (_selectedTransaction?.transactionId == transaction.transactionId) {
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Transaction approved successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _loadData();
         _closeTransactionDetails();
       }
-    } else {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to approve transaction'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
       );
     }
   }
 
   Future<void> _rejectTransaction(Transaction transaction) async {
     final reason = await _showRejectDialog();
-    if (reason != null && reason.isNotEmpty) {
+    if (reason == null || reason.isEmpty) return;
+
+    try {
       final adminProvider = Provider.of<AdminProvider>(context, listen: false);
       final success = await adminProvider.rejectTransaction(
         transaction.transactionId!,
@@ -199,23 +187,18 @@ class _ManageTransactionsScreenState extends State<ManageTransactionsScreen> {
 
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Transaction #${transaction.transactionId} rejected'),
+          const SnackBar(
+            content: Text('Transaction rejected'),
             backgroundColor: Colors.orange,
           ),
         );
         _loadData();
-        if (_selectedTransaction?.transactionId == transaction.transactionId) {
-          _closeTransactionDetails();
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to reject transaction'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        _closeTransactionDetails();
       }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+      );
     }
   }
 
@@ -223,11 +206,13 @@ class _ManageTransactionsScreenState extends State<ManageTransactionsScreen> {
     final controller = TextEditingController();
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
+    // Custom dialog using AlertDialog instead of DialogBox
     return showDialog<String>(
       context: context,
       builder:
           (context) => AlertDialog(
-            backgroundColor: isDarkMode ? AppColors.darkSurface : Colors.white,
+            backgroundColor:
+                isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
             title: const Text('Reject Transaction'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -267,8 +252,9 @@ class _ManageTransactionsScreenState extends State<ManageTransactionsScreen> {
     final adminProvider = Provider.of<AdminProvider>(context, listen: false);
 
     final exportData = ExportData(
-      title: 'Transactions Report',
-      subtitle: 'Complete list of all transactions in the system',
+      title: 'Transaction Management Report',
+      subtitle:
+          'Complete list of all transactions with management capabilities',
       userData: {
         'admin_name': adminProvider.currentAdmin?.fullName ?? 'Administrator',
         'export_date': DateTime.now().toString().split(' ')[0],
@@ -306,7 +292,7 @@ class _ManageTransactionsScreenState extends State<ManageTransactionsScreen> {
     ExportDialogHelper.show(
       context: context,
       exportData: exportData,
-      title: 'Export Transactions Data',
+      title: 'Export Transaction Management Data',
     );
   }
 
@@ -344,7 +330,6 @@ class _ManageTransactionsScreenState extends State<ManageTransactionsScreen> {
   Map<String, dynamic> _getTransactionStats() {
     final allTransactions =
         Provider.of<AdminProvider>(context, listen: false).allTransactions;
-
     final totalVolume = allTransactions.fold(0.0, (sum, t) => sum + t.amount);
     final averageAmount =
         allTransactions.isNotEmpty ? totalVolume / allTransactions.length : 0.0;
@@ -370,139 +355,182 @@ class _ManageTransactionsScreenState extends State<ManageTransactionsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Scaffold(
+      backgroundColor:
+          isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
+      appBar: AppBar(
+        backgroundColor:
+            isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
+        foregroundColor: isDarkMode ? Colors.white : AppColors.darkText,
+        elevation: 0,
+        title: Text(
+          _selectedTransaction == null
+              ? 'Manage Transactions'
+              : 'Transaction #${_selectedTransaction!.transactionId}',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: isDarkMode ? Colors.white : AppColors.darkText,
+          ),
+        ),
+        actions: [
+          if (_selectedTransaction == null) ...[
+            IconButton(
+              onPressed:
+                  () => Navigator.pushNamed(
+                    context,
+                    '/admin/transaction-history',
+                  ),
+              icon: const Icon(Icons.history),
+              tooltip: 'View History',
+            ),
+            IconButton(
+              onPressed: _exportTransactionsData,
+              icon: const Icon(Icons.download),
+              tooltip: 'Export Data',
+            ),
+            IconButton(
+              onPressed: _loadData,
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Refresh',
+            ),
+          ] else ...[
+            IconButton(
+              onPressed: _closeTransactionDetails,
+              icon: const Icon(Icons.close),
+              tooltip: 'Close Details',
+            ),
+          ],
+        ],
+      ),
+      drawer: const AdminNavigationDrawer(),
+      body:
+          _selectedTransaction != null
+              ? TransactionDetailsWidget(
+                transaction: _selectedTransaction!,
+                userName: _selectedTransactionUser?.username,
+                userEmail: _selectedTransactionUser?.email,
+              )
+              : _buildManagementView(context, isDarkMode),
+    );
+  }
+
+  Widget _buildManagementView(BuildContext context, bool isDarkMode) {
     return Consumer<AdminProvider>(
       builder: (context, adminProvider, child) {
-        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+        return Column(
+          children: [
+            // Use existing TransactionsStatsWidget
+            TransactionsStatsWidget(
+              stats: _getTransactionStats(),
+              onStatTap: _onStatTap,
+            ),
 
-        return Scaffold(
-          backgroundColor:
-              isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
-          appBar: _buildAppBar(context, isDarkMode),
-          drawer: const AdminNavigationDrawer(selectedIndex: 2),
-          body:
-              _selectedTransaction == null
-                  ? _buildTransactionsListView(
-                    context,
-                    adminProvider,
-                    isDarkMode,
-                  )
-                  : _buildTransactionDetailsView(context, isDarkMode),
+            // Use existing TransactionsFilterWidget
+            TransactionsFilterWidget(
+              searchController: _searchController,
+              onSearchChanged: _onSearchChanged,
+              selectedStatus: _selectedStatus,
+              selectedType: _selectedType,
+              onStatusChanged: _onStatusChanged,
+              onTypeChanged: _onTypeChanged,
+              totalTransactions: _filteredTransactions.length,
+              onClearFilters: _clearFilters,
+            ),
+
+            // Connection to History Page
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Card(
+                      color:
+                          isDarkMode
+                              ? AppColors.primaryGreen.withOpacity(0.1)
+                              : AppColors.primaryGreen.withOpacity(0.05),
+                      child: InkWell(
+                        onTap:
+                            () => Navigator.pushNamed(
+                              context,
+                              '/admin/transaction-history',
+                            ),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.history,
+                                color: AppColors.primaryGreen,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'View Complete Transaction History',
+                                  style: TextStyle(
+                                    color: AppColors.primaryGreen,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                              Icon(
+                                Icons.arrow_forward_ios,
+                                color: AppColors.primaryGreen,
+                                size: 16,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Transactions List
+            Expanded(
+              child:
+                  adminProvider.isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _filteredTransactions.isEmpty
+                      ? _buildEmptyState(isDarkMode)
+                      : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _filteredTransactions.length,
+                        itemBuilder: (context, index) {
+                          final transaction = _filteredTransactions[index];
+                          final user = _userAccounts[transaction.accountId];
+
+                          return TransactionCardWidget(
+                            transaction: transaction,
+                            userName: user?.username,
+                            onApprove:
+                                transaction.status.toLowerCase() == 'pending'
+                                    ? () => _approveTransaction(transaction)
+                                    : null,
+                            onReject:
+                                transaction.status.toLowerCase() == 'pending'
+                                    ? () => _rejectTransaction(transaction)
+                                    : null,
+                            onViewDetails:
+                                () => _showTransactionDetails(transaction),
+                          );
+                        },
+                      ),
+            ),
+          ],
         );
       },
     );
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context, bool isDarkMode) {
-    return AppBar(
-      backgroundColor:
-          isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
-      foregroundColor: isDarkMode ? Colors.white : AppColors.darkText,
-      elevation: 0,
-      title: Text(
-        _selectedTransaction == null
-            ? 'Manage Transactions'
-            : 'Transaction #${_selectedTransaction!.transactionId}',
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.w800,
-          color: isDarkMode ? Colors.white : AppColors.darkText,
-        ),
-      ),
-      actions: [
-        if (_selectedTransaction == null) ...[
-          IconButton(
-            onPressed: _exportTransactionsData,
-            icon: const Icon(Icons.download),
-            tooltip: 'Export Transactions Data',
-          ),
-          IconButton(
-            onPressed: () => _loadData(),
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
-          ),
-        ] else ...[
-          IconButton(
-            onPressed: _closeTransactionDetails,
-            icon: const Icon(Icons.close),
-            tooltip: 'Close Details',
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildTransactionsListView(
-    BuildContext context,
-    AdminProvider adminProvider,
-    bool isDarkMode,
-  ) {
-    return Column(
-      children: [
-        // Stats Overview
-        TransactionsStatsWidget(
-          stats: _getTransactionStats(),
-          onStatTap: _onStatTap,
-        ),
-
-        // Filters
-        TransactionsFilterWidget(
-          searchController: _searchController,
-          onSearchChanged: _onSearchChanged,
-          selectedStatus: _selectedStatus,
-          selectedType: _selectedType,
-          onStatusChanged: _onStatusChanged,
-          onTypeChanged: _onTypeChanged,
-          totalTransactions: _filteredTransactions.length,
-          onClearFilters: _clearFilters,
-        ),
-
-        // Transactions List
-        Expanded(
-          child:
-              adminProvider.isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _filteredTransactions.isEmpty
-                  ? _buildEmptyState(isDarkMode)
-                  : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _filteredTransactions.length,
-                    itemBuilder: (context, index) {
-                      final transaction = _filteredTransactions[index];
-                      final user = _userAccounts[transaction.accountId];
-                      final isPending =
-                          transaction.status.toLowerCase() == 'pending';
-
-                      return TransactionCardWidget(
-                        transaction: transaction,
-                        userName: user?.username,
-                        onApprove:
-                            isPending
-                                ? () => _approveTransaction(transaction)
-                                : null,
-                        onReject:
-                            isPending
-                                ? () => _rejectTransaction(transaction)
-                                : null,
-                        onViewDetails:
-                            () => _showTransactionDetails(transaction),
-                      );
-                    },
-                  ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTransactionDetailsView(BuildContext context, bool isDarkMode) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: TransactionDetailsWidget(
-        transaction: _selectedTransaction!,
-        userName: _selectedTransactionUser?.username,
-        userEmail: _selectedTransactionUser?.email,
-      ),
-    );
-  }
+  // Fix for the _buildEmptyState method in manage_transactions_screen.dart
 
   Widget _buildEmptyState(bool isDarkMode) {
     return Center(
@@ -513,48 +541,49 @@ class _ManageTransactionsScreenState extends State<ManageTransactionsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.receipt_long_outlined,
+              Icons.manage_accounts_outlined,
               size: 48,
               color:
                   isDarkMode
-                      ? Colors.white.withOpacity(0.3)
-                      : AppColors.lightText.withOpacity(0.5),
+                      ? Colors.white.withAlpha(77) // 0.3 opacity
+                      : AppColors.lightText.withAlpha(128), // 0.5 opacity
             ),
             const SizedBox(height: 12),
             Text(
-              'No transactions found',
+              'No transactions to manage',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color:
                     isDarkMode
-                        ? Colors.white.withOpacity(0.7)
+                        ? Colors.white.withAlpha(179) // 0.7 opacity
                         : AppColors.lightText,
               ),
             ),
             const SizedBox(height: 6),
             Text(
-              'No transactions match your current filters',
+              'Transactions requiring management will appear here',
               style: TextStyle(
                 fontSize: 13,
                 color:
                     isDarkMode
-                        ? Colors.white.withOpacity(0.5)
-                        : AppColors.lightText.withOpacity(0.7),
+                        ? Colors.white.withAlpha(128) // 0.5 opacity
+                        : AppColors.lightText.withAlpha(179), // 0.7 opacity
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 12),
-            TextButton.icon(
-              onPressed: _clearFilters,
-              icon: const Icon(Icons.clear_all, size: 18),
-              label: const Text('Clear Filters'),
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.primaryGreen,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed:
+                  () => Navigator.pushNamed(
+                    context,
+                    '/admin/transaction-history',
+                  ),
+              icon: const Icon(Icons.history),
+              label: const Text('View All Transactions'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryGreen,
+                foregroundColor: Colors.white,
               ),
             ),
           ],
