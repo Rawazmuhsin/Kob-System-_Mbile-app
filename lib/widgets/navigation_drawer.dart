@@ -108,7 +108,7 @@ class AppNavigationDrawer extends StatelessWidget {
                     activeIcon: Icons.qr_code,
                     title: 'QR Codes',
                     index: 8,
-                    onTap: () => _navigateToPage(context, '/qr-codes'),
+                    onTap: () => _navigateToPage(context, '/qr-display'),
                     isDarkMode: isDarkMode,
                   ),
 

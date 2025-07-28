@@ -189,7 +189,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                     child: DataTable(
                       columnSpacing: 20,
                       horizontalMargin: 16,
-                      headingRowColor: MaterialStateProperty.all(
+                      headingRowColor: WidgetStateProperty.all(
                         isDarkMode
                             ? AppColors.primaryDark.withAlpha(51) // 0.2 opacity
                             : AppColors.primaryDark.withAlpha(
