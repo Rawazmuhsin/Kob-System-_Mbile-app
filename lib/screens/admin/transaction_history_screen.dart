@@ -138,7 +138,9 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
           ],
         ],
       ),
-      drawer: const AdminNavigationDrawer(selectedIndex: 2), // Set selectedIndex to 2 for Transactions
+      drawer: const AdminNavigationDrawer(
+        selectedIndex: 2,
+      ), // Set selectedIndex to 2 for Transactions
       body:
           _selectedTransaction != null
               ? TransactionDetailsWidget(
