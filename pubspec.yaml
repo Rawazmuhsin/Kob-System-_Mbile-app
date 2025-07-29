@@ -86,6 +86,10 @@ dependencies:
   # Save images to gallery
   image_gallery_saver: ^2.0.3
 
+  # Share QR code
+  share_plus: ^7.2.1
+
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

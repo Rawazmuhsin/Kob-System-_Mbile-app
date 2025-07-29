@@ -314,8 +314,8 @@ class _QRExportScreenState extends State<QRExportScreen> {
 
   void _shareQRCode() {
     if (qrData != null) {
-      // For now, just copy to clipboard
-      // In a real app, you would use a share plugin
+     
+     
       Clipboard.setData(ClipboardData(text: qrData!));
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -325,7 +325,6 @@ class _QRExportScreenState extends State<QRExportScreen> {
       );
     }
   }
-
   void _saveAsFile() async {
     if (qrData != null) {
       // Show loading indicator

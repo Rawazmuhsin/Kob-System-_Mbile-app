@@ -1,16 +1,18 @@
-// QR display screen
 // lib/screens/qr/qr_display_screen.dart
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
+
 import '../../core/constants.dart';
 import '../../widgets/navigation_drawer.dart';
 import '../../widgets/custom_button.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../services/qr_service.dart';
 import '../../routes/app_routes.dart';
-import 'dart:io' show Platform;
 
 class QRDisplayScreen extends StatefulWidget {
   const QRDisplayScreen({super.key});
@@ -21,6 +23,7 @@ class QRDisplayScreen extends StatefulWidget {
 
 class _QRDisplayScreenState extends State<QRDisplayScreen> {
   String? qrData;
+  bool isLoading = false;
 
   @override
   void initState() {
@@ -43,6 +46,224 @@ class _QRDisplayScreenState extends State<QRDisplayScreen> {
           accountNumber: account.accountNumber ?? '',
         );
       });
+    }
+  }
+
+  void _copyQRCode() {
+    if (qrData != null && qrData!.isNotEmpty) {
+      Clipboard.setData(ClipboardData(text: qrData!));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('QR code copied to clipboard'),
+          backgroundColor: AppColors.primaryGreen,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('QR code not available'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // SHARE QR CODE AS TEXT
+  void _shareQRCode() {
+    if (qrData != null && qrData!.isNotEmpty) {
+      Share.share(qrData!, subject: 'KOB QR Payment Info');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('QR data not available'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // SHARE QR CODE AS FILE
+  void _shareQRCodeAsFile() async {
+    if (qrData != null && qrData!.isNotEmpty) {
+      try {
+        // Show loading indicator
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder:
+              (context) => const Center(child: CircularProgressIndicator()),
+        );
+
+        final directory = await getTemporaryDirectory();
+        final file = File('${directory.path}/kob_qr_data.txt');
+        await file.writeAsString(qrData!);
+
+        // Close loading indicator
+        if (mounted) Navigator.pop(context);
+
+        await Share.shareXFiles([
+          XFile(file.path),
+        ], text: 'KOB QR Payment Info (File)');
+      } catch (e) {
+        // Close loading indicator if still open
+        if (mounted) Navigator.pop(context);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sharing file: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('QR data not available'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // SHARE QR CODE AS IMAGE - ENHANCED VERSION
+  void _shareQRCodeAsImage() async {
+    final dashboardProvider = Provider.of<DashboardProvider>(
+      context,
+      listen: false,
+    );
+    final account = dashboardProvider.currentAccount;
+
+    if (qrData != null && qrData!.isNotEmpty && account != null) {
+      try {
+        // Show loading indicator
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder:
+              (context) => const Center(child: CircularProgressIndicator()),
+        );
+
+        // Generate enhanced QR image bytes with username
+        final imageBytes = await QRService.generateEnhancedQRImageBytes(
+          qrData: qrData!,
+          username: account.username,
+        );
+
+        // Save to temporary file
+        final directory = await getTemporaryDirectory();
+        final fileName = 'kob_qr_${DateTime.now().millisecondsSinceEpoch}.png';
+        final file = File('${directory.path}/$fileName');
+        await file.writeAsBytes(imageBytes);
+
+        // Close loading indicator
+        if (mounted) Navigator.pop(context);
+
+        // Share the enhanced image file
+        await Share.shareXFiles(
+          [XFile(file.path)],
+          text:
+              'KOB QR Payment Code - Scan to send money to ${account.username}',
+        );
+      } catch (e) {
+        // Close loading indicator if still open
+        if (mounted) Navigator.pop(context);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sharing QR image: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('QR data not available'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _navigateToExport() {
+    AppRoutes.navigateToQrExport(context);
+  }
+
+  // SAVE QR IMAGE - ENHANCED VERSION
+  void _saveQRImage() async {
+    final dashboardProvider = Provider.of<DashboardProvider>(
+      context,
+      listen: false,
+    );
+    final account = dashboardProvider.currentAccount;
+
+    if (qrData != null && account != null) {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      try {
+        print('Starting enhanced QR image save from display screen...');
+        final success = await QRService.saveQRImageToGallery(
+          qrData!,
+          username: account.username,
+        );
+
+        // Check if widget is still mounted before using context
+        if (!mounted) return;
+
+        // Hide loading indicator
+        Navigator.pop(context);
+
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                Platform.isIOS && QRService.isIOSSimulator
+                    ? 'Enhanced QR code saved to documents directory (iOS simulator)'
+                    : 'Enhanced QR code saved to photo gallery',
+              ),
+              backgroundColor: AppColors.primaryGreen,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Failed to save QR code. Please check permissions in Settings.',
+              ),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+      } catch (e) {
+        print('Error in _saveQRImage: $e');
+
+        // Check if widget is still mounted before using context
+        if (!mounted) return;
+
+        // Hide loading indicator
+        Navigator.pop(context);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving enhanced QR code: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('QR code data not available'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -90,30 +311,25 @@ class _QRDisplayScreenState extends State<QRDisplayScreen> {
                     ),
                   ),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CircleAvatar(
-                        radius: 30,
-                        backgroundColor: AppColors.primaryGreen.withOpacity(
-                          0.1,
-                        ),
-                        child: Text(
-                          account.username.substring(0, 1).toUpperCase(),
-                          style: TextStyle(
-                            color: AppColors.primaryGreen,
-                            fontSize: 24,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
                       Text(
-                        account.username,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
+                        'Account Holder',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isDarkMode ? Colors.white70 : Colors.black54,
                         ),
                       ),
                       const SizedBox(height: 4),
+                      Text(
+                        account.username,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: isDarkMode ? Colors.white : AppColors.darkText,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                       Text(
                         'Account: ****${(account.accountNumber ?? '').length >= 4 ? (account.accountNumber!).substring((account.accountNumber!).length - 4) : '****'}',
                         style: TextStyle(
@@ -189,7 +405,7 @@ class _QRDisplayScreenState extends State<QRDisplayScreen> {
 
                 const SizedBox(height: 24),
 
-                // Action Buttons
+                // Action Buttons Row 1
                 Row(
                   children: [
                     Expanded(
@@ -203,7 +419,7 @@ class _QRDisplayScreenState extends State<QRDisplayScreen> {
                     Expanded(
                       child: CustomButton(
                         text: 'Copy Code',
-                        onPressed: () => _copyQRCode(),
+                        onPressed: _copyQRCode,
                         isPrimary: true,
                       ),
                     ),
@@ -212,15 +428,48 @@ class _QRDisplayScreenState extends State<QRDisplayScreen> {
 
                 const SizedBox(height: 16),
 
-                // Save QR Image Button
-                SizedBox(
-                  width: double.infinity,
-                  child: CustomButton(
-                    text: 'Save QR Image',
-                    onPressed: () => _saveQRImage(),
-                    isPrimary: false,
-                    icon: Icons.save_alt,
-                  ),
+                // Action Buttons Row 2 - SHARING OPTIONS
+                Row(
+                  children: [
+                    Expanded(
+                      child: CustomButton(
+                        text: 'Share QR',
+                        onPressed: _shareQRCode,
+                        isPrimary: false,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: CustomButton(
+                        text: 'Share File',
+                        onPressed: _shareQRCodeAsFile,
+                        isPrimary: false,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Action Buttons Row 3 - IMAGE SHARING & SAVE
+                Row(
+                  children: [
+                    Expanded(
+                      child: CustomButton(
+                        text: 'Share Image',
+                        onPressed: _shareQRCodeAsImage,
+                        isPrimary: false,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: CustomButton(
+                        text: 'Save Image',
+                        onPressed: _saveQRImage,
+                        isPrimary: false,
+                      ),
+                    ),
+                  ],
                 ),
 
                 const SizedBox(height: 16),
@@ -230,7 +479,7 @@ class _QRDisplayScreenState extends State<QRDisplayScreen> {
                   width: double.infinity,
                   child: CustomButton(
                     text: 'Export QR Code',
-                    onPressed: () => _navigateToExport(),
+                    onPressed: _navigateToExport,
                     isPrimary: false,
                     icon: Icons.download,
                   ),
@@ -247,7 +496,7 @@ class _QRDisplayScreenState extends State<QRDisplayScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.info_outline,
                         color: AppColors.primaryGreen,
                         size: 20,
@@ -255,7 +504,7 @@ class _QRDisplayScreenState extends State<QRDisplayScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Share this QR code with others to receive payments. QR code expires after 24 hours.',
+                          'Share this QR code with others to receive payments. QR code expires after 24 hours for security.',
                           style: TextStyle(
                             fontSize: 12,
                             color: AppColors.primaryGreen,
@@ -271,89 +520,5 @@ class _QRDisplayScreenState extends State<QRDisplayScreen> {
         },
       ),
     );
-  }
-
-  void _copyQRCode() {
-    if (qrData != null) {
-      Clipboard.setData(ClipboardData(text: qrData!));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('QR code copied to clipboard'),
-          backgroundColor: AppColors.primaryGreen,
-        ),
-      );
-    }
-  }
-
-  void _navigateToExport() {
-    AppRoutes.navigateToQrExport(context);
-  }
-
-  void _saveQRImage() async {
-    if (qrData != null) {
-      // Show loading indicator
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
-      );
-
-      try {
-        print('Starting QR image save from display screen...');
-        final success = await QRService.saveQRImageToGallery(qrData!);
-
-        // Check if widget is still mounted before using context
-        if (!mounted) return;
-
-        // Hide loading indicator
-        Navigator.pop(context);
-
-        if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                Platform.isIOS && QRService.isIOSSimulator
-                    ? 'QR code saved to documents directory (iOS simulator)'
-                    : 'QR code saved to photo gallery',
-              ),
-              backgroundColor: AppColors.primaryGreen,
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Failed to save QR code. Please check permissions in Settings.',
-              ),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 4),
-            ),
-          );
-        }
-      } catch (e) {
-        print('Error in _saveQRImage: $e');
-
-        // Check if widget is still mounted before using context
-        if (!mounted) return;
-
-        // Hide loading indicator
-        Navigator.pop(context);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error saving QR code: $e'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 4),
-          ),
-        );
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('QR code data not available'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
   }
 }

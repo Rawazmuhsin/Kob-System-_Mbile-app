@@ -11,6 +11,7 @@ import 'providers/forgot_password_provider.dart';
 import 'providers/dashboard_provider.dart';
 import 'providers/admin_provider.dart';
 import 'providers/balance_provider.dart';
+import 'providers/qr_provider.dart'; // Add this import
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,6 +46,8 @@ class KOBApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => ForgotPasswordProvider()),
         ChangeNotifierProvider(create: (context) => DashboardProvider()),
         ChangeNotifierProvider(create: (context) => AdminProvider()),
+        ChangeNotifierProvider(create: (_) => QRProvider()), // ADD THIS LINE
+
         ChangeNotifierProvider(
           create: (context) => BalanceProvider(),
         ), // ADD THIS LINE
