@@ -9,6 +9,8 @@ import '../../widgets/navigation_drawer.dart';
 import '../../widgets/custom_button.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../services/qr_service.dart';
+import '../../routes/app_routes.dart';
+import 'dart:io' show Platform;
 
 class QRDisplayScreen extends StatefulWidget {
   const QRDisplayScreen({super.key});
@@ -210,6 +212,32 @@ class _QRDisplayScreenState extends State<QRDisplayScreen> {
 
                 const SizedBox(height: 16),
 
+                // Save QR Image Button
+                SizedBox(
+                  width: double.infinity,
+                  child: CustomButton(
+                    text: 'Save QR Image',
+                    onPressed: () => _saveQRImage(),
+                    isPrimary: false,
+                    icon: Icons.save_alt,
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Export Button
+                SizedBox(
+                  width: double.infinity,
+                  child: CustomButton(
+                    text: 'Export QR Code',
+                    onPressed: () => _navigateToExport(),
+                    isPrimary: false,
+                    icon: Icons.download,
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
                 // Info Text
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -252,6 +280,78 @@ class _QRDisplayScreenState extends State<QRDisplayScreen> {
         const SnackBar(
           content: Text('QR code copied to clipboard'),
           backgroundColor: AppColors.primaryGreen,
+        ),
+      );
+    }
+  }
+
+  void _navigateToExport() {
+    AppRoutes.navigateToQrExport(context);
+  }
+
+  void _saveQRImage() async {
+    if (qrData != null) {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      try {
+        print('Starting QR image save from display screen...');
+        final success = await QRService.saveQRImageToGallery(qrData!);
+
+        // Check if widget is still mounted before using context
+        if (!mounted) return;
+
+        // Hide loading indicator
+        Navigator.pop(context);
+
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                Platform.isIOS && QRService.isIOSSimulator
+                    ? 'QR code saved to documents directory (iOS simulator)'
+                    : 'QR code saved to photo gallery',
+              ),
+              backgroundColor: AppColors.primaryGreen,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Failed to save QR code. Please check permissions in Settings.',
+              ),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+      } catch (e) {
+        print('Error in _saveQRImage: $e');
+
+        // Check if widget is still mounted before using context
+        if (!mounted) return;
+
+        // Hide loading indicator
+        Navigator.pop(context);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving QR code: $e'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('QR code data not available'),
+          backgroundColor: Colors.red,
         ),
       );
     }

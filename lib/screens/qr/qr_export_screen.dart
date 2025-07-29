@@ -5,9 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants.dart';
 import '../../widgets/navigation_drawer.dart';
-import '../../widgets/custom_button.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../services/qr_service.dart';
+import 'dart:io' show Platform;
 
 class QRExportScreen extends StatefulWidget {
   const QRExportScreen({super.key});
@@ -326,15 +326,69 @@ class _QRExportScreenState extends State<QRExportScreen> {
     }
   }
 
-  void _saveAsFile() {
+  void _saveAsFile() async {
     if (qrData != null) {
-      // For now, just copy to clipboard
-      // In a real app, you would use a file saving plugin
-      Clipboard.setData(ClipboardData(text: qrData!));
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      try {
+        print('Starting QR image save from export screen...');
+        final success = await QRService.saveQRImageToGallery(qrData!);
+
+        // Check if widget is still mounted before using context
+        if (!mounted) return;
+
+        // Hide loading indicator
+        Navigator.pop(context);
+
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                Platform.isIOS && QRService.isIOSSimulator
+                    ? 'QR code saved to photo gallery'
+                    : 'QR code saved to photo gallery',
+              ),
+              backgroundColor: AppColors.primaryGreen,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Failed to save QR code. Please check permissions in Settings.',
+              ),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+      } catch (e) {
+        print('Error in _saveAsFile: $e');
+
+        // Check if widget is still mounted before using context
+        if (!mounted) return;
+
+        // Hide loading indicator
+        Navigator.pop(context);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving QR code: $e'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('QR data copied to clipboard for saving'),
-          backgroundColor: AppColors.primaryGreen,
+          content: Text('QR code data not available'),
+          backgroundColor: Colors.red,
         ),
       );
     }

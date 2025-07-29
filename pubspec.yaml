@@ -82,6 +82,9 @@ dependencies:
   
   # Permissions
   permission_handler: ^11.0.1
+  
+  # Save images to gallery
+  image_gallery_saver: ^2.0.3
 
 dev_dependencies:
   flutter_test:
