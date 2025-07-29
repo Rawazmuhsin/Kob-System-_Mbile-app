@@ -60,6 +60,64 @@ class AuthService {
     return RegExp(r'^\+?[\d\s\-\(\)]{10,}$').hasMatch(phone);
   }
 
+  Future<bool> updateAccountInfo({
+    required int accountId,
+    required String username,
+    required String email,
+    required String phone,
+  }) async {
+    try {
+      print('=== UPDATING ACCOUNT INFO ===');
+      print('Account ID: $accountId');
+      print('New Username: $username');
+      print('New Email: $email');
+      print('New Phone: $phone');
+
+      // Validate inputs using existing methods
+      if (!isValidEmail(email)) {
+        throw Exception('Invalid email format');
+      }
+
+      if (!isValidPhone(phone)) {
+        throw Exception('Invalid phone number format');
+      }
+
+      // Check if new email already exists for a different account
+      final existingUserType = await detectUserType(email);
+      if (existingUserType != UserType.unknown) {
+        // Check if this email belongs to the current account
+        final currentAccount = await getAccountById(accountId);
+        if (currentAccount == null ||
+            currentAccount.email?.toLowerCase() != email.toLowerCase()) {
+          throw Exception('Email already exists in system');
+        }
+      }
+
+      // Update account data
+      final result = await _dbHelper.update(
+        'accounts',
+        {
+          'username': username.trim(),
+          'email': email.toLowerCase().trim(),
+          'phone': phone.trim(),
+        },
+        where: 'account_id = ?',
+        whereArgs: [accountId],
+      );
+
+      if (result > 0) {
+        print('✅ Account info updated successfully');
+        return true;
+      } else {
+        print('❌ Failed to update account info');
+        return false;
+      }
+    } catch (e) {
+      print('❌ Update account info error: $e');
+      throw Exception('Update account info error: $e');
+    }
+  }
+
   // Validate strong password
   bool isStrongPassword(String password) {
     return password.length >= 8 &&

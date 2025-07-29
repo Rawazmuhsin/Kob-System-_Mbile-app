@@ -186,7 +186,7 @@ class _QRDisplayScreenState extends State<QRDisplayScreen> {
   }
 
   void _navigateToExport() {
-    AppRoutes.navigateToQrExport(context);
+    Navigator.of(context).pushNamed(AppRoutes.qrExport);
   }
 
   // SAVE QR IMAGE - ENHANCED VERSION

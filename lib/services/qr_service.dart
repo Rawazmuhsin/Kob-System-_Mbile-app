@@ -5,13 +5,10 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'dart:io' show Platform, File;
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:flutter/widgets.dart';
-import '../widgets/qr_enhancements.dart';
 
 class QRService {
   // Generate QR data for user account

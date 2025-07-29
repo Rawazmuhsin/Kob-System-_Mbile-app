@@ -1,4 +1,4 @@
-// lib/routes/app_routes.dart - COMPLETE UPDATED VERSION WITH QR FUNCTIONALITY
+// lib/routes/app_routes.dart - PROPERLY UPDATED VERSION PRESERVING YOUR EXISTING STRUCTURE
 import 'package:flutter/material.dart';
 import '../screens/welcome_screen.dart';
 import '../screens/auth/login_screen.dart';
@@ -13,6 +13,9 @@ import '../screens/admin/transaction_history_screen.dart';
 import '../screens/qr/qr_display_screen.dart';
 import '../screens/qr/qr_scanner_screen.dart';
 import '../screens/qr/qr_export_screen.dart';
+// ADD THESE NEW IMPORTS FOR ACCOUNT FUNCTIONALITY
+import '../screens/user/account_screen.dart';
+import '../screens/user/change_password_screen.dart';
 
 class AppRoutes {
   // Route names
@@ -29,6 +32,10 @@ class AppRoutes {
   static const String qrDisplay = '/qr-display';
   static const String qrScanner = '/qr-scanner';
   static const String qrExport = '/qr-export';
+
+  // ADD THESE NEW ACCOUNT ROUTES
+  static const String account = '/account';
+  static const String changePassword = '/change-password';
 
   // Admin routes
   static const String adminDashboard = '/admin/dashboard';
@@ -79,6 +86,19 @@ class AppRoutes {
           settings: settings,
         );
 
+      // ADD THESE NEW ACCOUNT ROUTES
+      case account:
+        return MaterialPageRoute(
+          builder: (_) => const AccountScreen(),
+          settings: settings,
+        );
+
+      case changePassword:
+        return MaterialPageRoute(
+          builder: (_) => const ChangePasswordScreen(),
+          settings: settings,
+        );
+
       // QR Code Routes
       case qrDisplay:
         return MaterialPageRoute(
@@ -99,6 +119,111 @@ class AppRoutes {
       case qrExport:
         return MaterialPageRoute(
           builder: (_) => const QRExportScreen(),
+          settings: settings,
+        );
+
+      // Placeholder routes for future implementation
+      case deposit:
+        return MaterialPageRoute(
+          builder:
+              (_) => const Scaffold(
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add_circle, size: 64, color: Colors.green),
+                      SizedBox(height: 16),
+                      Text(
+                        'Deposit Screen',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text('Coming Soon'),
+                    ],
+                  ),
+                ),
+              ),
+          settings: settings,
+        );
+
+      case withdraw:
+        return MaterialPageRoute(
+          builder:
+              (_) => const Scaffold(
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.remove_circle, size: 64, color: Colors.orange),
+                      SizedBox(height: 16),
+                      Text(
+                        'Withdraw Screen',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text('Coming Soon'),
+                    ],
+                  ),
+                ),
+              ),
+          settings: settings,
+        );
+
+      case transfer:
+        return MaterialPageRoute(
+          builder:
+              (_) => const Scaffold(
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.send, size: 64, color: Colors.blue),
+                      SizedBox(height: 16),
+                      Text(
+                        'Transfer Screen',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text('Coming Soon'),
+                    ],
+                  ),
+                ),
+              ),
+          settings: settings,
+        );
+
+      case transactions:
+        return MaterialPageRoute(
+          builder:
+              (_) => const Scaffold(
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.history, size: 64, color: Colors.purple),
+                      SizedBox(height: 16),
+                      Text(
+                        'Transaction History',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text('Coming Soon'),
+                    ],
+                  ),
+                ),
+              ),
           settings: settings,
         );
 
@@ -163,52 +288,37 @@ class AppRoutes {
           settings: settings,
         );
 
-      // Transaction screens - Coming Soon
-      case deposit:
-        return MaterialPageRoute(
-          builder:
-              (_) => const Scaffold(
-                body: Center(child: Text('Deposit Screen - Coming Soon')),
-              ),
-          settings: settings,
-        );
-
-      case withdraw:
-        return MaterialPageRoute(
-          builder:
-              (_) => const Scaffold(
-                body: Center(child: Text('Withdraw Screen - Coming Soon')),
-              ),
-          settings: settings,
-        );
-
-      case transfer:
-        return MaterialPageRoute(
-          builder:
-              (_) => const Scaffold(
-                body: Center(child: Text('Transfer Screen - Coming Soon')),
-              ),
-          settings: settings,
-        );
-
-      case transactions:
-        return MaterialPageRoute(
-          builder:
-              (_) => const Scaffold(
-                body: Center(child: Text('Transactions Screen - Coming Soon')),
-              ),
-          settings: settings,
-        );
-
+      // Default case - route not found
       default:
         return MaterialPageRoute(
-          builder: (_) => const WelcomeScreen(),
+          builder:
+              (_) => Scaffold(
+                appBar: AppBar(title: const Text('Page Not Found')),
+                body: const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error_outline, size: 64, color: Colors.red),
+                      SizedBox(height: 16),
+                      Text(
+                        '404 - Page Not Found',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text('The requested page does not exist.'),
+                    ],
+                  ),
+                ),
+              ),
           settings: settings,
         );
     }
   }
 
-  // Navigation helpers
+  // PRESERVE ALL YOUR EXISTING NAVIGATION HELPER METHODS
   static void navigateToLogin(BuildContext context) {
     Navigator.pushNamed(context, login);
   }
@@ -252,6 +362,15 @@ class AppRoutes {
 
   static void navigateToTransactions(BuildContext context) {
     Navigator.pushNamed(context, transactions);
+  }
+
+  // ADD NEW ACCOUNT NAVIGATION HELPERS
+  static void navigateToAccount(BuildContext context) {
+    Navigator.pushNamed(context, account);
+  }
+
+  static void navigateToChangePassword(BuildContext context) {
+    Navigator.pushNamed(context, changePassword);
   }
 
   // QR Code navigation helpers
@@ -321,5 +440,45 @@ class AppRoutes {
   // Push and clear stack
   static void pushAndClearStack(BuildContext context, String routeName) {
     Navigator.pushNamedAndRemoveUntil(context, routeName, (route) => false);
+  }
+
+  // Helper method to get all available routes
+  static List<String> getAllRoutes() {
+    return [
+      splash,
+      login,
+      register,
+      forgotPassword,
+      dashboard,
+      balance,
+      account,
+      changePassword,
+      deposit,
+      withdraw,
+      transfer,
+      transactions,
+      qrDisplay,
+      qrScanner,
+      qrExport,
+      adminDashboard,
+      adminUsers,
+      adminTransactions,
+      adminTransactionHistory,
+      adminApprovals,
+      adminReports,
+      adminAudit,
+      adminSettings,
+    ];
+  }
+
+  // Helper method to check if route requires authentication
+  static bool requiresAuth(String route) {
+    const publicRoutes = [splash, login, register, forgotPassword];
+    return !publicRoutes.contains(route);
+  }
+
+  // Helper method to check if route requires admin privileges
+  static bool requiresAdmin(String route) {
+    return route.startsWith('/admin');
   }
 }

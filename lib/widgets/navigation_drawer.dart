@@ -1,4 +1,4 @@
-// lib/widgets/navigation_drawer.dart
+// lib/widgets/navigation_drawer.dart - COMPLETE UPDATED VERSION
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/constants.dart';
@@ -26,7 +26,6 @@ class AppNavigationDrawer extends StatelessWidget {
           // Navigation items
           Expanded(
             child: SingleChildScrollView(
-              // Add scroll view to prevent overflow
               padding: EdgeInsets.zero,
               child: Column(
                 children: [
@@ -36,7 +35,7 @@ class AppNavigationDrawer extends StatelessWidget {
                     activeIcon: Icons.dashboard,
                     title: 'Dashboard',
                     index: 0,
-                    onTap: () => _navigateToPage(context, '/dashboard'),
+                    onTap: () => _navigateToPage(context, AppRoutes.dashboard),
                     isDarkMode: isDarkMode,
                   ),
                   _buildNavigationItem(
@@ -45,7 +44,7 @@ class AppNavigationDrawer extends StatelessWidget {
                     activeIcon: Icons.account_balance_wallet,
                     title: 'Balance',
                     index: 1,
-                    onTap: () => _navigateToPage(context, '/balance'),
+                    onTap: () => _navigateToPage(context, AppRoutes.balance),
                     isDarkMode: isDarkMode,
                   ),
                   _buildNavigationItem(
@@ -54,7 +53,7 @@ class AppNavigationDrawer extends StatelessWidget {
                     activeIcon: Icons.account_balance,
                     title: 'Accounts',
                     index: 2,
-                    onTap: () => _navigateToPage(context, '/accounts'),
+                    onTap: () => _navigateToPage(context, AppRoutes.account),
                     isDarkMode: isDarkMode,
                   ),
                   _buildNavigationItem(
@@ -63,7 +62,7 @@ class AppNavigationDrawer extends StatelessWidget {
                     activeIcon: Icons.add_circle,
                     title: 'Deposit',
                     index: 3,
-                    onTap: () => _navigateToPage(context, '/deposit'),
+                    onTap: () => _navigateToPage(context, AppRoutes.deposit),
                     isDarkMode: isDarkMode,
                   ),
                   _buildNavigationItem(
@@ -72,34 +71,26 @@ class AppNavigationDrawer extends StatelessWidget {
                     activeIcon: Icons.remove_circle,
                     title: 'Withdraw',
                     index: 4,
-                    onTap: () => _navigateToPage(context, '/withdraw'),
+                    onTap: () => _navigateToPage(context, AppRoutes.withdraw),
                     isDarkMode: isDarkMode,
                   ),
                   _buildNavigationItem(
                     context: context,
-                    icon: Icons.swap_horiz_outlined,
-                    activeIcon: Icons.swap_horiz,
-                    title: 'Transfers',
+                    icon: Icons.send_outlined,
+                    activeIcon: Icons.send,
+                    title: 'Transfer',
                     index: 5,
-                    onTap: () => _navigateToPage(context, '/transfer'),
+                    onTap: () => _navigateToPage(context, AppRoutes.transfer),
                     isDarkMode: isDarkMode,
                   ),
                   _buildNavigationItem(
                     context: context,
-                    icon: Icons.receipt_long_outlined,
-                    activeIcon: Icons.receipt_long,
+                    icon: Icons.history_outlined,
+                    activeIcon: Icons.history,
                     title: 'Transactions',
                     index: 6,
-                    onTap: () => _navigateToPage(context, '/transactions'),
-                    isDarkMode: isDarkMode,
-                  ),
-                  _buildNavigationItem(
-                    context: context,
-                    icon: Icons.credit_card_outlined,
-                    activeIcon: Icons.credit_card,
-                    title: 'Cards',
-                    index: 7,
-                    onTap: () => _navigateToPage(context, '/cards'),
+                    onTap:
+                        () => _navigateToPage(context, AppRoutes.transactions),
                     isDarkMode: isDarkMode,
                   ),
                   _buildNavigationItem(
@@ -107,30 +98,54 @@ class AppNavigationDrawer extends StatelessWidget {
                     icon: Icons.qr_code_outlined,
                     activeIcon: Icons.qr_code,
                     title: 'QR Codes',
-                    index: 8,
-                    onTap: () => _navigateToPage(context, '/qr-display'),
+                    index: 7,
+                    onTap: () => _navigateToPage(context, AppRoutes.qrDisplay),
                     isDarkMode: isDarkMode,
                   ),
 
-                  const Divider(height: 32),
+                  // Divider before account section
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: Divider(
+                      color:
+                          isDarkMode
+                              ? Colors.white.withOpacity(0.1)
+                              : Colors.black.withOpacity(0.1),
+                    ),
+                  ),
 
-                  // Settings and logout
+                  // Account Management Section
+                  _buildNavigationItem(
+                    context: context,
+                    icon: Icons.person_outline,
+                    activeIcon: Icons.person,
+                    title: 'My Account',
+                    index: 8,
+                    onTap: () => _navigateToPage(context, AppRoutes.account),
+                    isDarkMode: isDarkMode,
+                  ),
+                  _buildNavigationItem(
+                    context: context,
+                    icon: Icons.lock_outline,
+                    activeIcon: Icons.lock,
+                    title: 'Change Password',
+                    index: 9,
+                    onTap:
+                        () =>
+                            _navigateToPage(context, AppRoutes.changePassword),
+                    isDarkMode: isDarkMode,
+                  ),
                   _buildNavigationItem(
                     context: context,
                     icon: Icons.settings_outlined,
                     activeIcon: Icons.settings,
                     title: 'Settings',
-                    index: 9,
-                    onTap: () => _navigateToPage(context, '/settings'),
-                    isDarkMode: isDarkMode,
-                  ),
-                  _buildNavigationItem(
-                    context: context,
-                    icon: Icons.help_outline,
-                    activeIcon: Icons.help,
-                    title: 'Help & Support',
                     index: 10,
-                    onTap: () => _navigateToPage(context, '/help'),
+                    onTap:
+                        () => _navigateToPage(context, AppRoutes.adminSettings),
                     isDarkMode: isDarkMode,
                   ),
                 ],
@@ -138,8 +153,29 @@ class AppNavigationDrawer extends StatelessWidget {
             ),
           ),
 
-          // Logout button
-          _buildLogoutButton(context, isDarkMode, authProvider),
+          // Logout section at bottom
+          Container(
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(
+                  color:
+                      isDarkMode
+                          ? Colors.white.withOpacity(0.1)
+                          : Colors.black.withOpacity(0.1),
+                ),
+              ),
+            ),
+            child: _buildNavigationItem(
+              context: context,
+              icon: Icons.logout_outlined,
+              activeIcon: Icons.logout,
+              title: 'Logout',
+              index: -1, // Special index for logout
+              onTap: () => _handleLogout(context),
+              isDarkMode: isDarkMode,
+              isLogout: true,
+            ),
+          ),
         ],
       ),
     );
@@ -152,97 +188,64 @@ class AppNavigationDrawer extends StatelessWidget {
   ) {
     return Container(
       width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 120),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors:
-              isDarkMode
-                  ? [AppColors.primaryDark, Colors.black87]
-                  : [AppColors.primaryDark, AppColors.primaryGreen],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
+          colors: [AppColors.primaryDark, AppColors.primaryGreen],
         ),
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           child: Column(
-            mainAxisSize: MainAxisSize.min, // Important: Use minimum size
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // App Logo Section
-              const SizedBox(height: 22), // Reduced spacing
-              // User info
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 22, // Slightly smaller
-                    backgroundColor: Colors.white.withOpacity(0.2),
-                    child: Text(
-                      currentAccount?.username?.substring(0, 1).toUpperCase() ??
-                          'U',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16, // Reduced font size
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min, // Important
-                      children: [
-                        Text(
-                          'Welcome back,',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.8),
-                            fontSize: 11, // Reduced font size
-                          ),
-                        ),
-                        Text(
-                          currentAccount?.username ?? 'User',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14, // Reduced font size
-                            fontWeight: FontWeight.w600,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1, // Limit to 1 line
-                        ),
-                        Text(
-                          currentAccount?.accountType ?? 'Account',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
-                            fontSize: 10, // Reduced font size
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10), // Reduced spacing
-              // Account balance chip - make it smaller
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ), // Reduced padding
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(16), // Smaller radius
-                ),
+              // User Avatar
+              CircleAvatar(
+                radius: 32,
+                backgroundColor: Colors.white.withOpacity(0.2),
                 child: Text(
-                  'Balance: \$${currentAccount?.balance?.toStringAsFixed(2) ?? '0.00'}',
+                  currentAccount?.username.substring(0, 1).toUpperCase() ?? 'U',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 11, // Reduced font size
-                    fontWeight: FontWeight.w500,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w600,
                   ),
-                  overflow: TextOverflow.ellipsis, // Prevent overflow
                 ),
               ),
+              const SizedBox(height: 12),
+
+              // User Name
+              Text(
+                currentAccount?.username ?? 'User Name',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+
+              // Account Type
+              Text(
+                '${currentAccount?.accountType ?? 'Account'} Account',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.8),
+                  fontSize: 14,
+                ),
+              ),
+
+              // Account Number
+              if (currentAccount?.accountNumber != null)
+                Text(
+                  'Account: ${currentAccount!.accountNumber}',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 12,
+                  ),
+                ),
             ],
           ),
         ),
@@ -258,19 +261,30 @@ class AppNavigationDrawer extends StatelessWidget {
     required int index,
     required VoidCallback onTap,
     required bool isDarkMode,
+    bool isLogout = false,
   }) {
     final isSelected = selectedIndex == index;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color:
+            isSelected
+                ? (isDarkMode
+                    ? AppColors.primaryGreen.withOpacity(0.2)
+                    : AppColors.primaryGreen.withOpacity(0.1))
+                : Colors.transparent,
+      ),
       child: ListTile(
         leading: Icon(
           isSelected ? activeIcon : icon,
           color:
               isSelected
                   ? AppColors.primaryGreen
-                  : (isDarkMode ? Colors.white70 : AppColors.darkText),
-          size: 22,
+                  : (isLogout
+                      ? Colors.red
+                      : (isDarkMode ? Colors.white70 : AppColors.lightText)),
         ),
         title: Text(
           title,
@@ -278,69 +292,71 @@ class AppNavigationDrawer extends StatelessWidget {
             color:
                 isSelected
                     ? AppColors.primaryGreen
-                    : (isDarkMode ? Colors.white : AppColors.darkText),
+                    : (isLogout
+                        ? Colors.red
+                        : (isDarkMode ? Colors.white : AppColors.darkText)),
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-            fontSize: 15,
           ),
         ),
         onTap: onTap,
-        selected: isSelected,
-        selectedTileColor: AppColors.primaryGreen.withOpacity(0.1),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      ),
-    );
-  }
-
-  Widget _buildLogoutButton(
-    BuildContext context,
-    bool isDarkMode,
-    AuthProvider authProvider,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: ListTile(
-        leading: Icon(Icons.logout, color: Colors.red, size: 22),
-        title: const Text(
-          'Logout',
-          style: TextStyle(
-            color: Colors.red,
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
-          ),
-        ),
-        onTap: () => _showLogoutDialog(context, authProvider),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       ),
     );
   }
 
   void _navigateToPage(BuildContext context, String route) {
-    Navigator.pop(context); // Close drawer
+    print('🔄 Navigating to route: $route');
+    Navigator.of(context).pop(); // Close drawer
+
+    // Don't navigate if already on the same route
     if (ModalRoute.of(context)?.settings.name != route) {
-      Navigator.pushNamed(context, route);
+      print('✅ Pushing to route: $route');
+      Navigator.of(context).pushNamed(route);
+    } else {
+      print('⚠️ Already on route: $route');
     }
   }
 
-  void _showLogoutDialog(BuildContext context, AuthProvider authProvider) {
+  void _handleLogout(BuildContext context) {
+    Navigator.of(context).pop(); // Close drawer
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
         return AlertDialog(
-          title: const Text('Logout'),
-          content: const Text('Are you sure you want to logout?'),
+          backgroundColor: isDarkMode ? AppColors.darkSurface : Colors.white,
+          title: Text(
+            'Logout',
+            style: TextStyle(
+              color: isDarkMode ? Colors.white : AppColors.darkText,
+            ),
+          ),
+          content: Text(
+            'Are you sure you want to logout?',
+            style: TextStyle(
+              color: isDarkMode ? Colors.white70 : AppColors.lightText,
+            ),
+          ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: isDarkMode ? Colors.white70 : AppColors.lightText,
+                ),
+              ),
             ),
             TextButton(
               onPressed: () {
-                Navigator.pop(context); // Close dialog
-                Navigator.pop(context); // Close drawer
-                authProvider.logout();
-                AppRoutes.navigateToSplash(context);
+                Navigator.of(context).pop();
+                Provider.of<AuthProvider>(context, listen: false).logout();
+                Navigator.of(
+                  context,
+                ).pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
               },
               child: const Text('Logout', style: TextStyle(color: Colors.red)),
             ),
