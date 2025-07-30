@@ -12,9 +12,9 @@ import '../screens/admin/transaction_history_screen.dart';
 import '../screens/qr/qr_display_screen.dart';
 import '../screens/qr/qr_scanner_screen.dart';
 import '../screens/qr/qr_export_screen.dart';
-// ADD THESE NEW IMPORTS FOR ACCOUNT FUNCTIONALITY
 import '../screens/user/account_screen.dart';
 import '../screens/user/change_password_screen.dart';
+import '../screens/settings/settings_screen.dart';
 
 class AppRoutes {
   // Route names
@@ -35,6 +35,8 @@ class AppRoutes {
   // ADD THESE NEW ACCOUNT ROUTES
   static const String account = '/account';
   static const String changePassword = '/change-password';
+  // ADD SETTINGS ROUTE
+  static const String settingsRoute = '/settings';
 
   // Admin routes
   static const String adminDashboard = '/admin/dashboard';
@@ -95,6 +97,13 @@ class AppRoutes {
       case changePassword:
         return MaterialPageRoute(
           builder: (_) => const ChangePasswordScreen(),
+          settings: settings,
+        );
+
+      // ADD SETTINGS ROUTE
+      case settingsRoute:
+        return MaterialPageRoute(
+          builder: (_) => const SettingsScreen(),
           settings: settings,
         );
 
@@ -280,10 +289,7 @@ class AppRoutes {
 
       case adminSettings:
         return MaterialPageRoute(
-          builder:
-              (_) => const Scaffold(
-                body: Center(child: Text('Admin Settings - Coming Soon')),
-              ),
+          builder: (_) => const SettingsScreen(),
           settings: settings,
         );
 
@@ -372,6 +378,11 @@ class AppRoutes {
     Navigator.pushNamed(context, changePassword);
   }
 
+  // ADD SETTINGS NAVIGATION HELPER
+  static void navigateToSettings(BuildContext context) {
+    Navigator.pushNamed(context, settingsRoute);
+  }
+
   // QR Code navigation helpers
   static void navigateToQrDisplay(BuildContext context) {
     Navigator.pushNamed(context, qrDisplay);
@@ -452,6 +463,7 @@ class AppRoutes {
       balance,
       account,
       changePassword,
+      settingsRoute,
       deposit,
       withdraw,
       transfer,

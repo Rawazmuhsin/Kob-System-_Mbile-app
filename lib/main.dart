@@ -12,6 +12,7 @@ import 'providers/admin_provider.dart';
 import 'providers/balance_provider.dart';
 import 'providers/qr_provider.dart';
 import 'providers/account_provider.dart';
+import 'providers/settings_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -47,6 +48,7 @@ class KOBApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => DashboardProvider()),
         ChangeNotifierProvider(create: (context) => AdminProvider()),
         ChangeNotifierProvider(create: (_) => QRProvider()), // ADD THIS LINE
+        ChangeNotifierProvider(create: (_) => SettingsProvider()), // Add this
 
         ChangeNotifierProvider(create: (context) => AccountProvider()),
 
