@@ -1,6 +1,3 @@
-// lib/providers/balance_provider.dart
-// Replace your entire balance_provider.dart with this:
-
 import 'package:flutter/foundation.dart';
 import '../models/account.dart';
 import '../services/balance_service.dart';

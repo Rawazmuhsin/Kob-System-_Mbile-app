@@ -1,6 +1,3 @@
-// lib/screens/balance/balance_screen.dart
-// Replace the existing balance_screen.dart content with this
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants.dart';

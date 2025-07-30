@@ -1,4 +1,3 @@
-// lib/widgets/balance/period_selector.dart
 import 'package:flutter/material.dart';
 import '../../core/constants.dart';
 

@@ -1,4 +1,3 @@
-// lib/providers/forgot_password_provider.dart
 import 'package:flutter/foundation.dart';
 import '../confirmation/forgot_password/forgot_password_service.dart';
 

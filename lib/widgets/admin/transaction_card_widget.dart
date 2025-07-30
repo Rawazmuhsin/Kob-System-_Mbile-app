@@ -1,4 +1,3 @@
-// lib/widgets/admin/transaction_card_widget.dart
 import 'package:flutter/material.dart';
 import '../../core/constants.dart';
 import '../../models/transaction.dart';

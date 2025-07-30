@@ -1,4 +1,3 @@
-// lib/screens/qr/qr_display_screen.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

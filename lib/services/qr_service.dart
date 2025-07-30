@@ -1,4 +1,3 @@
-// lib/services/qr_service.dart
 import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';

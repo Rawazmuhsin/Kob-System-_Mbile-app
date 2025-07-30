@@ -1,4 +1,3 @@
-// lib/routes/app_routes.dart - PROPERLY UPDATED VERSION PRESERVING YOUR EXISTING STRUCTURE
 import 'package:flutter/material.dart';
 import '../screens/welcome_screen.dart';
 import '../screens/auth/login_screen.dart';

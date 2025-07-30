@@ -1,4 +1,3 @@
-// lib/providers/auth_provider.dart - UPDATED VERSION
 import 'package:flutter/foundation.dart';
 import '../models/user.dart';
 import '../models/account.dart';

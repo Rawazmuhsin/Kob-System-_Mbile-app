@@ -1,4 +1,3 @@
-// lib/providers/qr_provider.dart
 import 'package:flutter/material.dart';
 import '../models/account.dart';
 import '../services/qr_service.dart';

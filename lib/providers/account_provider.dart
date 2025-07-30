@@ -1,9 +1,8 @@
-// lib/providers/account_provider.dart
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'dart:io';
-import '../models/account.dart';
+import 'package:path_provider/path_provider.dart';
 import '../confirmation/auth_service.dart';
 import '../confirmation/signup/signup_confirmation.dart';
 import '../core/utils.dart'; // Using your existing utils
@@ -12,6 +11,7 @@ class AccountProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   File? _profileImage;
+  int? _currentAccountId;
 
   // Getters
   bool get isLoading => _isLoading;
@@ -40,20 +40,60 @@ class AccountProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Pick profile image from gallery
+  // Set current account ID for profile image updates
+  void setCurrentAccountId(int accountId) {
+    _currentAccountId = accountId;
+  }
+
+  // Load profile image from database
+  Future<void> loadProfileImage() async {
+    if (_currentAccountId == null) return;
+
+    try {
+      final account = await _authService.getAccountById(_currentAccountId!);
+      if (account?.profileImage != null) {
+        final file = File(account!.profileImage!);
+        if (await file.exists()) {
+          _profileImage = file;
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      print('Error loading profile image: $e');
+    }
+  }
+
+  // Pick profile image from gallery with cropping
   Future<bool> pickProfileImage() async {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 512,
-        maxHeight: 512,
-        imageQuality: 80,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 90,
       );
 
       if (image != null) {
-        _profileImage = File(image.path);
-        notifyListeners();
-        return true;
+        // Crop the image
+        final croppedFile = await _cropImage(image.path);
+        if (croppedFile != null) {
+          // Save to app documents directory
+          final savedPath = await _saveImageToAppDirectory(croppedFile);
+          if (savedPath != null) {
+            _profileImage = File(savedPath);
+
+            // Update database if account ID is available
+            if (_currentAccountId != null) {
+              await _authService.updateProfileImage(
+                _currentAccountId!,
+                savedPath,
+              );
+            }
+
+            notifyListeners();
+            return true;
+          }
+        }
       }
       return false;
     } catch (e) {
@@ -62,20 +102,37 @@ class AccountProvider with ChangeNotifier {
     }
   }
 
-  // Pick profile image from camera
+  // Pick profile image from camera with cropping
   Future<bool> takeProfilePhoto() async {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.camera,
-        maxWidth: 512,
-        maxHeight: 512,
-        imageQuality: 80,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 90,
       );
 
       if (image != null) {
-        _profileImage = File(image.path);
-        notifyListeners();
-        return true;
+        // Crop the image
+        final croppedFile = await _cropImage(image.path);
+        if (croppedFile != null) {
+          // Save to app documents directory
+          final savedPath = await _saveImageToAppDirectory(croppedFile);
+          if (savedPath != null) {
+            _profileImage = File(savedPath);
+
+            // Update database if account ID is available
+            if (_currentAccountId != null) {
+              await _authService.updateProfileImage(
+                _currentAccountId!,
+                savedPath,
+              );
+            }
+
+            notifyListeners();
+            return true;
+          }
+        }
       }
       return false;
     } catch (e) {
@@ -84,9 +141,80 @@ class AccountProvider with ChangeNotifier {
     }
   }
 
+  // Crop image using image_cropper
+  Future<File?> _cropImage(String imagePath) async {
+    try {
+      final croppedFile = await ImageCropper().cropImage(
+        sourcePath: imagePath,
+        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Crop Profile Picture',
+            toolbarColor: const Color(0xFF2E7D32),
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.square,
+            lockAspectRatio: true,
+            hideBottomControls: false,
+          ),
+          IOSUiSettings(
+            title: 'Crop Profile Picture',
+            aspectRatioLockEnabled: true,
+            aspectRatioPickerButtonHidden: true,
+            resetAspectRatioEnabled: false,
+            rotateButtonsHidden: true,
+            rotateClockwiseButtonHidden: true,
+          ),
+        ],
+      );
+      return croppedFile != null ? File(croppedFile.path) : null;
+    } catch (e) {
+      print('Error cropping image: $e');
+      return null;
+    }
+  }
+
+  // Save image to app documents directory
+  Future<String?> _saveImageToAppDirectory(File imageFile) async {
+    try {
+      final appDir = await getApplicationDocumentsDirectory();
+      final profileDir = Directory('${appDir.path}/profile_images');
+
+      if (!await profileDir.exists()) {
+        await profileDir.create(recursive: true);
+      }
+
+      final fileName = 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final savedFile = await imageFile.copy('${profileDir.path}/$fileName');
+
+      return savedFile.path;
+    } catch (e) {
+      print('Error saving image: $e');
+      return null;
+    }
+  }
+
   // Remove profile image
-  void removeProfileImage() {
+  Future<void> removeProfileImage() async {
+    if (_profileImage != null) {
+      // Delete the file
+      try {
+        await _profileImage!.delete();
+      } catch (e) {
+        print('Error deleting profile image file: $e');
+      }
+    }
+
     _profileImage = null;
+
+    // Update database to remove profile image path
+    if (_currentAccountId != null) {
+      try {
+        await _authService.updateProfileImage(_currentAccountId!, '');
+      } catch (e) {
+        print('Error removing profile image from database: $e');
+      }
+    }
+
     notifyListeners();
   }
 

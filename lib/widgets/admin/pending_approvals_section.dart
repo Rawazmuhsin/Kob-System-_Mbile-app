@@ -1,4 +1,3 @@
-// lib/widgets/admin/pending_approvals_section.dart
 import 'package:flutter/material.dart';
 import '../../core/constants.dart';
 import '../../models/transaction.dart';

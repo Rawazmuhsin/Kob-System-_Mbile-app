@@ -1,15 +1,11 @@
-// lib/screens/user/account_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'dart:io';
 import '../../core/constants.dart';
-import '../../core/utils.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/account_provider.dart';
 import '../../confirmation/signup/signup_confirmation.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/input_field.dart';
-import '../../routes/app_routes.dart';
 import 'change_password_screen.dart';
 
 class AccountScreen extends StatefulWidget {
@@ -50,6 +46,14 @@ class _AccountScreenState extends State<AccountScreen> {
       _usernameController.text = account.username;
       _emailController.text = account.email ?? '';
       _phoneController.text = account.phone;
+
+      // Set current account ID and load profile image
+      final accountProvider = Provider.of<AccountProvider>(
+        context,
+        listen: false,
+      );
+      accountProvider.setCurrentAccountId(account.accountId!);
+      accountProvider.loadProfileImage();
     }
   }
 
@@ -125,9 +129,9 @@ class _AccountScreenState extends State<AccountScreen> {
                 ListTile(
                   leading: const Icon(Icons.delete, color: Colors.red),
                   title: const Text('Remove Photo'),
-                  onTap: () {
+                  onTap: () async {
                     Navigator.of(context).pop();
-                    _removePhoto();
+                    await _removePhoto();
                   },
                 ),
             ],
@@ -161,12 +165,12 @@ class _AccountScreenState extends State<AccountScreen> {
     }
   }
 
-  void _removePhoto() {
+  Future<void> _removePhoto() async {
     final accountProvider = Provider.of<AccountProvider>(
       context,
       listen: false,
     );
-    accountProvider.removeProfileImage();
+    await accountProvider.removeProfileImage();
   }
 
   void _navigateToChangePassword() {

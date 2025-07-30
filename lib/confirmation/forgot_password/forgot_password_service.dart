@@ -1,4 +1,3 @@
-// lib/confirmation/forgot_password/forgot_password_service.dart
 import '../auth_service.dart';
 
 class ForgotPasswordResult {

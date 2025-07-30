@@ -1,4 +1,3 @@
-// lib/widgets/balance/balance_insights_widget.dart
 import 'package:flutter/material.dart';
 import '../../core/constants.dart';
 import '../../services/balance_service.dart';

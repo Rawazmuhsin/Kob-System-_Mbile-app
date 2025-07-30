@@ -1,4 +1,3 @@
-// lib/widgets/admin/user_card_widget.dart
 import 'package:flutter/material.dart';
 import '../../core/constants.dart';
 import '../../models/account.dart';

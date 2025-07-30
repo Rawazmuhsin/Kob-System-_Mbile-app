@@ -1,4 +1,3 @@
-// lib/screens/qr/qr_scanner_screen.dart - COMPATIBLE WITH qr_code_scanner ^1.0.1
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';

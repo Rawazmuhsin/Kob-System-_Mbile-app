@@ -1,5 +1,4 @@
 // QR export screen
-// lib/screens/qr/qr_export_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -314,8 +313,6 @@ class _QRExportScreenState extends State<QRExportScreen> {
 
   void _shareQRCode() {
     if (qrData != null) {
-     
-     
       Clipboard.setData(ClipboardData(text: qrData!));
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -325,6 +322,7 @@ class _QRExportScreenState extends State<QRExportScreen> {
       );
     }
   }
+
   void _saveAsFile() async {
     if (qrData != null) {
       // Show loading indicator

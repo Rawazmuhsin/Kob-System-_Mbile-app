@@ -1,4 +1,3 @@
-// lib/main.dart - UPDATED VERSION WITH BALANCE PROVIDER
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -11,7 +10,7 @@ import 'providers/forgot_password_provider.dart';
 import 'providers/dashboard_provider.dart';
 import 'providers/admin_provider.dart';
 import 'providers/balance_provider.dart';
-import 'providers/qr_provider.dart'; // Add this import
+import 'providers/qr_provider.dart';
 import 'providers/account_provider.dart';
 
 void main() async {

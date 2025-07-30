@@ -65,6 +65,7 @@ class AuthService {
     required String username,
     required String email,
     required String phone,
+    String? profileImagePath,
   }) async {
     try {
       print('=== UPDATING ACCOUNT INFO ===');
@@ -93,14 +94,22 @@ class AuthService {
         }
       }
 
+      // Prepare update data
+      final updateData = {
+        'username': username.trim(),
+        'email': email.toLowerCase().trim(),
+        'phone': phone.trim(),
+      };
+
+      // Add profile image path if provided
+      if (profileImagePath != null) {
+        updateData['profile_image'] = profileImagePath;
+      }
+
       // Update account data
       final result = await _dbHelper.update(
         'accounts',
-        {
-          'username': username.trim(),
-          'email': email.toLowerCase().trim(),
-          'phone': phone.trim(),
-        },
+        updateData,
         where: 'account_id = ?',
         whereArgs: [accountId],
       );
@@ -488,6 +497,33 @@ class AuthService {
       await _dbHelper.close();
     } catch (e) {
       print('Error closing database: $e');
+    }
+  }
+
+  // Update profile image
+  Future<bool> updateProfileImage(int accountId, String imagePath) async {
+    try {
+      print('=== UPDATING PROFILE IMAGE ===');
+      print('Account ID: $accountId');
+      print('Image Path: $imagePath');
+
+      final result = await _dbHelper.update(
+        'accounts',
+        {'profile_image': imagePath},
+        where: 'account_id = ?',
+        whereArgs: [accountId],
+      );
+
+      if (result > 0) {
+        print('✅ Profile image updated successfully');
+        return true;
+      } else {
+        print('❌ Failed to update profile image');
+        return false;
+      }
+    } catch (e) {
+      print('❌ Update profile image error: $e');
+      throw Exception('Update profile image error: $e');
     }
   }
 }

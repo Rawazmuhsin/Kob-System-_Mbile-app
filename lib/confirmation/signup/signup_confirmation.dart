@@ -1,4 +1,3 @@
-// lib/confirmation/signup/signup_confirmation.dart
 import '../../models/account.dart';
 import '../auth_service.dart';
 

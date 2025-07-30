@@ -1,4 +1,3 @@
-// lib/widgets/dashboard/account_balance_card.dart
 import 'package:flutter/material.dart';
 import '../../core/constants.dart';
 
