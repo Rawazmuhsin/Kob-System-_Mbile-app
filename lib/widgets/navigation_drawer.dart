@@ -146,7 +146,7 @@ class AppNavigationDrawer extends StatelessWidget {
                     title: 'Settings',
                     index: 10,
                     onTap:
-                        () => _navigateToPage(context, AppRoutes.adminSettings),
+                        () => _navigateToPage(context, AppRoutes.settingsRoute),
                     isDarkMode: isDarkMode,
                   ),
                 ],
