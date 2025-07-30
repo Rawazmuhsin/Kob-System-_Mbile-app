@@ -1,4 +1,6 @@
 // lib/widgets/settings/settings_section_widget.dart
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import '../../core/constants.dart';
 

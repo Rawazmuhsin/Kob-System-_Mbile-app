@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:flutter/foundation.dart';
 import '../models/account.dart';
 import '../services/balance_service.dart';

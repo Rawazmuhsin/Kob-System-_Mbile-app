@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import '../core/db_helper.dart';
