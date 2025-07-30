@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/constants.dart';
 import '../providers/auth_provider.dart';
+import '../providers/account_provider.dart';
 import '../routes/app_routes.dart';
 
 class AppNavigationDrawer extends StatelessWidget {
@@ -202,47 +204,90 @@ class AppNavigationDrawer extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // User Avatar
-              CircleAvatar(
-                radius: 32,
-                backgroundColor: Colors.white.withOpacity(0.2),
+              // User Avatar with Profile Picture
+              Consumer<AccountProvider>(
+                builder: (context, accountProvider, _) {
+                  // Ensure account ID is set for loading profile image
+                  if (currentAccount?.accountId != null &&
+                      (accountProvider.profileImage == null)) {
+                    accountProvider.setCurrentAccountId(
+                      currentAccount.accountId!,
+                    );
+                    accountProvider.loadProfileImage();
+                  }
+
+                  return Center(
+                    child: GestureDetector(
+                      onTap:
+                          () => _showProfileImageOptions(
+                            context,
+                            accountProvider,
+                          ),
+                      child: CircleAvatar(
+                        radius: 55,
+                        backgroundColor: Colors.white.withOpacity(0.2),
+                        backgroundImage:
+                            accountProvider.profileImage != null
+                                ? FileImage(accountProvider.profileImage!)
+                                : (currentAccount?.profileImage != null
+                                    ? FileImage(
+                                      File(currentAccount.profileImage!),
+                                    )
+                                    : null),
+                        child:
+                            (accountProvider.profileImage == null &&
+                                    currentAccount?.profileImage == null)
+                                ? Text(
+                                  currentAccount?.username
+                                          .substring(0, 1)
+                                          .toUpperCase() ??
+                                      'U',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                )
+                                : null,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 20),
+
+              // User Name
+              Center(
                 child: Text(
-                  currentAccount?.username.substring(0, 1).toUpperCase() ?? 'U',
+                  currentAccount?.username ?? 'User Name',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 24,
+                    fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
-
-              // User Name
-              Text(
-                currentAccount?.username ?? 'User Name',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
 
               // Account Type
-              Text(
-                '${currentAccount?.accountType ?? 'Account'} Account',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
-                  fontSize: 14,
+              Center(
+                child: Text(
+                  '${currentAccount?.accountType ?? 'Account'} Account',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 14,
+                  ),
                 ),
               ),
 
               // Account Number
               if (currentAccount?.accountNumber != null)
-                Text(
-                  'Account: ${currentAccount!.accountNumber}',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
-                    fontSize: 12,
+                Center(
+                  child: Text(
+                    'Account: ${currentAccount!.accountNumber}',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.7),
+                      fontSize: 12,
+                    ),
                   ),
                 ),
             ],
@@ -360,6 +405,50 @@ class AppNavigationDrawer extends StatelessWidget {
               child: const Text('Logout', style: TextStyle(color: Colors.red)),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  // Method to show profile image options
+  void _showProfileImageOptions(
+    BuildContext context,
+    AccountProvider accountProvider,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Choose from Gallery'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final success = await accountProvider.pickProfileImage();
+                  if (success && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Profile picture updated')),
+                    );
+                  }
+                },
+              ),
+              if (accountProvider.profileImage != null)
+                ListTile(
+                  leading: const Icon(Icons.delete, color: Colors.red),
+                  title: const Text(
+                    'Remove Profile Picture',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                  onTap: () {
+                    // TODO: Implement remove profile picture
+                    Navigator.pop(context);
+                  },
+                ),
+            ],
+          ),
         );
       },
     );
