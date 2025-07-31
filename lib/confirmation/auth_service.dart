@@ -2,6 +2,7 @@
 
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
+import 'dart:io';
 import '../core/db_helper.dart';
 import '../models/account.dart';
 import '../models/admin.dart';
@@ -508,6 +509,15 @@ class AuthService {
       print('=== UPDATING PROFILE IMAGE ===');
       print('Account ID: $accountId');
       print('Image Path: $imagePath');
+
+      // Make sure the directory exists in case it doesn't
+      if (imagePath.isNotEmpty) {
+        final file = File(imagePath);
+        final directory = file.parent;
+        if (!await directory.exists()) {
+          await directory.create(recursive: true);
+        }
+      }
 
       final result = await _dbHelper.update(
         'accounts',

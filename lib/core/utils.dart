@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 
 class AppUtils {
   // Show snackbar helper
@@ -62,5 +64,44 @@ class AppUtils {
         RegExp(r'[A-Z]').hasMatch(password) &&
         RegExp(r'[a-z]').hasMatch(password) &&
         RegExp(r'[0-9]').hasMatch(password);
+  }
+
+  // Path resolver utility for profile images
+  static Future<String?> resolveImagePath(
+    String? storedPath,
+    int accountId,
+  ) async {
+    if (storedPath == null || storedPath.isEmpty) return null;
+
+    // Check if the stored path exists
+    final storedFile = File(storedPath);
+    if (await storedFile.exists()) return storedPath;
+
+    // Try to find by pattern in the profile_images directory
+    try {
+      final appDir = await getApplicationDocumentsDirectory();
+      final profileDir = Directory('${appDir.path}/profile_images');
+
+      if (await profileDir.exists()) {
+        // Look for files matching this account ID
+        final recoveredFilePath = '${profileDir.path}/profile_$accountId.jpg';
+        final recoveredFile = File(recoveredFilePath);
+
+        if (await recoveredFile.exists()) return recoveredFilePath;
+
+        // As a last resort, look for any profile image for this account
+        final dir = Directory(profileDir.path);
+        final List<FileSystemEntity> entities = await dir.list().toList();
+        for (var entity in entities) {
+          if (entity is File && entity.path.contains('profile_$accountId')) {
+            return entity.path;
+          }
+        }
+      }
+      return null;
+    } catch (e) {
+      print('Error resolving image path: $e');
+      return null;
+    }
   }
 }

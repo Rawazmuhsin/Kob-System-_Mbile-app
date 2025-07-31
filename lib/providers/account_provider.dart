@@ -53,11 +53,62 @@ class AccountProvider with ChangeNotifier {
 
     try {
       final account = await _authService.getAccountById(_currentAccountId!);
-      if (account?.profileImage != null) {
-        final file = File(account!.profileImage!);
+      if (account?.profileImage != null && account!.profileImage!.isNotEmpty) {
+        File file = File(account.profileImage!);
+
+        // Check if the file exists
         if (await file.exists()) {
           _profileImage = file;
           notifyListeners();
+          print('Loaded profile image from: ${file.path}');
+        } else {
+          print('Profile image file not found at: ${account.profileImage}');
+
+          // Try to recover by looking for the file with a known pattern
+          final appDir = await getApplicationDocumentsDirectory();
+          final profileDir = Directory('${appDir.path}/profile_images');
+          final recoveredFilePath =
+              '${profileDir.path}/profile_$_currentAccountId.jpg';
+
+          File recoveredFile = File(recoveredFilePath);
+          if (await recoveredFile.exists()) {
+            _profileImage = recoveredFile;
+
+            // Update the database with the recovered path
+            await _authService.updateProfileImage(
+              _currentAccountId!,
+              recoveredFilePath,
+            );
+            notifyListeners();
+            print('Recovered profile image from: ${recoveredFile.path}');
+          } else {
+            print('Could not recover profile image');
+
+            // Try to recover from backup
+            final backupPath =
+                '${appDir.path}/profile_backups/profile_backup_$_currentAccountId.jpg';
+            final backupFile = File(backupPath);
+
+            if (await backupFile.exists()) {
+              // Restore from backup
+              if (!await profileDir.exists()) {
+                await profileDir.create(recursive: true);
+              }
+
+              final restoredPath =
+                  '${profileDir.path}/profile_$_currentAccountId.jpg';
+              await backupFile.copy(restoredPath);
+
+              _profileImage = File(restoredPath);
+              await _authService.updateProfileImage(
+                _currentAccountId!,
+                restoredPath,
+              );
+
+              notifyListeners();
+              print('Restored profile image from backup');
+            }
+          }
         }
       }
     } catch (e) {
@@ -93,6 +144,7 @@ class AccountProvider with ChangeNotifier {
             }
 
             notifyListeners();
+            await backupProfileImage();
             return true;
           }
         }
@@ -132,6 +184,7 @@ class AccountProvider with ChangeNotifier {
             }
 
             notifyListeners();
+            await backupProfileImage();
             return true;
           }
         }
@@ -185,13 +238,50 @@ class AccountProvider with ChangeNotifier {
         await profileDir.create(recursive: true);
       }
 
-      final fileName = 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      // Use account ID in filename for consistent retrieval
+      final fileName =
+          'profile_${_currentAccountId ?? DateTime.now().millisecondsSinceEpoch}.jpg';
       final savedFile = await imageFile.copy('${profileDir.path}/$fileName');
 
+      print('Image saved to: ${savedFile.path}');
       return savedFile.path;
     } catch (e) {
       print('Error saving image: $e');
       return null;
+    }
+  }
+
+  // Image path validation helper
+  Future<bool> isImagePathValid(String path) async {
+    if (path.isEmpty) return false;
+    try {
+      final file = File(path);
+      return await file.exists();
+    } catch (e) {
+      print('Error checking image path: $e');
+      return false;
+    }
+  }
+
+  // Backup profile image
+  Future<void> backupProfileImage() async {
+    if (_profileImage == null || _currentAccountId == null) return;
+
+    try {
+      final appDir = await getApplicationDocumentsDirectory();
+      final backupDir = Directory('${appDir.path}/profile_backups');
+
+      if (!await backupDir.exists()) {
+        await backupDir.create(recursive: true);
+      }
+
+      final backupPath =
+          '${backupDir.path}/profile_backup_$_currentAccountId.jpg';
+      await _profileImage!.copy(backupPath);
+
+      print('Profile image backed up to: $backupPath');
+    } catch (e) {
+      print('Error backing up profile image: $e');
     }
   }
 
