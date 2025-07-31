@@ -1,3 +1,4 @@
+// lib/atm/atm_connection_screen.dart
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -42,7 +43,7 @@ class _ATMConnectionScreenState extends State<ATMConnectionScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error taking photo: \$e'),
+            content: Text('Error taking photo: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -63,7 +64,8 @@ class _ATMConnectionScreenState extends State<ATMConnectionScreen> {
         setState(() {
           _selectedImage = File(image.path);
         });
-        
+
+        // Show success message for QR upload
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -77,7 +79,7 @@ class _ATMConnectionScreenState extends State<ATMConnectionScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error uploading QR image: \$e'),
+            content: Text('Error uploading QR image: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -100,6 +102,7 @@ class _ATMConnectionScreenState extends State<ATMConnectionScreen> {
       _isConnecting = true;
     });
 
+    // Simulate connection process
     await Future.delayed(const Duration(seconds: 3));
 
     setState(() {
@@ -107,6 +110,7 @@ class _ATMConnectionScreenState extends State<ATMConnectionScreen> {
       _isConnected = true;
     });
 
+    // Show success message
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -115,14 +119,14 @@ class _ATMConnectionScreenState extends State<ATMConnectionScreen> {
         ),
       );
 
+      // Navigate to withdraw screen after a short delay
       await Future.delayed(const Duration(seconds: 2));
-      
+
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (context) => ATMWithdrawScreen(
-              atmLocation: widget.atmLocation,
-            ),
+            builder:
+                (context) => ATMWithdrawScreen(atmLocation: widget.atmLocation),
           ),
         );
       }
@@ -150,6 +154,7 @@ class _ATMConnectionScreenState extends State<ATMConnectionScreen> {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
+                // ATM Info
                 Card(
                   elevation: 4,
                   shape: RoundedRectangleBorder(
@@ -160,11 +165,7 @@ class _ATMConnectionScreenState extends State<ATMConnectionScreen> {
                     padding: const EdgeInsets.all(16.0),
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.atm,
-                          size: 40,
-                          color: Colors.blue[800],
-                        ),
+                        Icon(Icons.atm, size: 40, color: Colors.blue[800]),
                         const SizedBox(width: 16),
                         Expanded(
                           child: Column(
@@ -200,7 +201,10 @@ class _ATMConnectionScreenState extends State<ATMConnectionScreen> {
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 24),
+
+                // Instructions
                 if (!_isConnected) ...[
                   Container(
                     padding: const EdgeInsets.all(16.0),
@@ -237,7 +241,10 @@ class _ATMConnectionScreenState extends State<ATMConnectionScreen> {
                       ],
                     ),
                   ),
+
                   const SizedBox(height: 24),
+
+                  // Image Display or Camera Button
                   Expanded(
                     child: Container(
                       width: double.infinity,
@@ -246,46 +253,54 @@ class _ATMConnectionScreenState extends State<ATMConnectionScreen> {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.grey[300]!),
                       ),
-                      child: _selectedImage != null
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.file(
-                                _selectedImage!,
-                                fit: BoxFit.cover,
-                              ),
-                            )
-                          : Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.add_a_photo,
-                                  size: 64,
-                                  color: Colors.grey[400],
+                      child:
+                          _selectedImage != null
+                              ? ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.file(
+                                  _selectedImage!,
+                                  fit: BoxFit.cover,
                                 ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Take photo or upload QR image',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey[600],
+                              )
+                              : Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.add_a_photo,
+                                    size: 64,
+                                    color: Colors.grey[400],
                                   ),
-                                ),
-                              ],
-                            ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Take photo or upload QR image',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
                     ),
                   ),
+
                   const SizedBox(height: 24),
+
+                  // Action Buttons - Camera and Upload
                   Row(
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: _pickImage,
-                          icon: Icon(_selectedImage != null 
-                              ? Icons.refresh 
-                              : Icons.camera_alt),
-                          label: Text(_selectedImage != null 
-                              ? 'Retake Photo' 
-                              : 'Take Photo'),
+                          icon: Icon(
+                            _selectedImage != null
+                                ? Icons.refresh
+                                : Icons.camera_alt,
+                          ),
+                          label: Text(
+                            _selectedImage != null
+                                ? 'Retake Photo'
+                                : 'Take Photo',
+                          ),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.blue[800],
                             side: BorderSide(color: Colors.blue[800]!),
@@ -308,21 +323,25 @@ class _ATMConnectionScreenState extends State<ATMConnectionScreen> {
                       ),
                     ],
                   ),
+
                   const SizedBox(height: 12),
+
+                  // Connect Button
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       onPressed: _isConnecting ? null : _connectToATM,
-                      icon: _isConnecting
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(Icons.link),
+                      icon:
+                          _isConnecting
+                              ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                              : const Icon(Icons.link),
                       label: Text(_isConnecting ? 'Connecting...' : 'Connect'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue[800],
@@ -332,6 +351,8 @@ class _ATMConnectionScreenState extends State<ATMConnectionScreen> {
                     ),
                   ),
                 ],
+
+                // Success State
                 if (_isConnected) ...[
                   Expanded(
                     child: Column(
