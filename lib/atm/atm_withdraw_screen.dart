@@ -87,12 +87,15 @@ class _ATMWithdrawScreenState extends State<ATMWithdrawScreen> {
       // Use database transaction for atomicity
       final dbHelper = DatabaseHelper();
       final db = await dbHelper.database;
-      
+
       await db.transaction((txn) async {
         // Insert transaction record
-        final transactionId = await txn.insert('transactions', transaction.toMap());
+        final transactionId = await txn.insert(
+          'transactions',
+          transaction.toMap(),
+        );
         print('Transaction inserted with ID: $transactionId');
-        
+
         // Update account balance
         final updateCount = await txn.rawUpdate(
           'UPDATE accounts SET balance = balance - ? WHERE account_id = ?',
@@ -105,7 +108,7 @@ class _ATMWithdrawScreenState extends State<ATMWithdrawScreen> {
       await _refreshAccountBalance(authProvider, account.accountId!);
 
       print('ATM withdrawal completed successfully');
-      
+
       // Debug: Print account info after transaction
       await DatabaseDebugUtil.printAccountInfo(account.accountId!);
 
@@ -127,31 +130,36 @@ class _ATMWithdrawScreenState extends State<ATMWithdrawScreen> {
     }
   }
 
-  Future<void> _refreshAccountBalance(AuthProvider authProvider, int accountId) async {
+  Future<void> _refreshAccountBalance(
+    AuthProvider authProvider,
+    int accountId,
+  ) async {
     try {
       print('=== Refreshing Account Balance ===');
       print('Account ID: $accountId');
-      
+
       final dbHelper = DatabaseHelper();
       final db = await dbHelper.database;
-      
+
       final result = await db.query(
         'accounts',
         where: 'account_id = ?',
         whereArgs: [accountId],
         limit: 1,
       );
-      
+
       if (result.isNotEmpty) {
         final updatedBalance = (result.first['balance'] as num).toDouble();
         print('Updated balance from DB: $updatedBalance');
-        print('Previous balance in provider: ${authProvider.currentAccount?.balance}');
-        
+        print(
+          'Previous balance in provider: ${authProvider.currentAccount?.balance}',
+        );
+
         // Update the account in the provider
         final updatedAccount = authProvider.currentAccount!.copyWith(
           balance: updatedBalance,
         );
-        
+
         // Update the provider
         authProvider.updateCurrentAccount(updatedAccount);
         print('✅ Account balance updated in provider: $updatedBalance');
@@ -266,10 +274,9 @@ class _ATMWithdrawScreenState extends State<ATMWithdrawScreen> {
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.of(context).pop(); // Close dialog first
-                  Navigator.of(context).pushNamedAndRemoveUntil(
-                    '/dashboard',
-                    (route) => false,
-                  );
+                  Navigator.of(
+                    context,
+                  ).pushNamedAndRemoveUntil('/dashboard', (route) => false);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green[600],

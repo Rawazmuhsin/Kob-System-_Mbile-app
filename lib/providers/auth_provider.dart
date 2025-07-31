@@ -299,7 +299,9 @@ class AuthProvider with ChangeNotifier {
 
     try {
       // You can implement this to fetch the latest account data from database
-      print('Refreshing account balance for account ID: ${_currentAccount?.accountId}');
+      print(
+        'Refreshing account balance for account ID: ${_currentAccount?.accountId}',
+      );
       notifyListeners();
     } catch (e) {
       print('Error refreshing account balance: $e');
