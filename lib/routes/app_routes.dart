@@ -15,6 +15,9 @@ import '../screens/qr/qr_export_screen.dart';
 import '../screens/user/account_screen.dart';
 import '../screens/user/change_password_screen.dart';
 import '../screens/settings/settings_screen.dart';
+import '../screens/transaction/deposit_screen.dart';
+import '../screens/transaction/withdraw_screen.dart';
+import '../screens/admin/transaction_approval_screen.dart';
 
 class AppRoutes {
   // Route names
@@ -130,56 +133,15 @@ class AppRoutes {
           settings: settings,
         );
 
-      // Placeholder routes for future implementation
       case deposit:
         return MaterialPageRoute(
-          builder:
-              (_) => const Scaffold(
-                body: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.add_circle, size: 64, color: Colors.green),
-                      SizedBox(height: 16),
-                      Text(
-                        'Deposit Screen',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Text('Coming Soon'),
-                    ],
-                  ),
-                ),
-              ),
+          builder: (_) => const DepositScreen(),
           settings: settings,
         );
 
       case withdraw:
         return MaterialPageRoute(
-          builder:
-              (_) => const Scaffold(
-                body: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.remove_circle, size: 64, color: Colors.orange),
-                      SizedBox(height: 16),
-                      Text(
-                        'Withdraw Screen',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Text('Coming Soon'),
-                    ],
-                  ),
-                ),
-              ),
+          builder: (_) => const WithdrawScreen(),
           settings: settings,
         );
 
@@ -262,10 +224,7 @@ class AppRoutes {
 
       case adminApprovals:
         return MaterialPageRoute(
-          builder:
-              (_) => const Scaffold(
-                body: Center(child: Text('Approval Queue - Coming Soon')),
-              ),
+          builder: (_) => const TransactionApprovalScreen(),
           settings: settings,
         );
 
