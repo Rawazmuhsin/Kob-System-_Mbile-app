@@ -33,8 +33,7 @@ class Transaction {
       'description': description,
       'status': status,
       'approval_date': approvalDate?.toIso8601String(),
-      'account_number': accountNumber,
-      'user_id': userId,
+      'recipient_account_number': accountNumber,
     };
   }
 
@@ -54,7 +53,7 @@ class Transaction {
           map['approval_date'] != null
               ? DateTime.parse(map['approval_date'])
               : null,
-      accountNumber: map['account_number'],
+      accountNumber: map['recipient_account_number'],
       userId: map['user_id'],
     );
   }

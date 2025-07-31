@@ -1,7 +1,6 @@
 // Transaction state management
 // lib/providers/transaction_provider.dart
 import 'package:flutter/foundation.dart';
-import '../models/transaction.dart';
 import '../services/dashboard_service.dart';
 
 class TransactionProvider with ChangeNotifier {

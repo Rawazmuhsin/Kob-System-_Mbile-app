@@ -12,6 +12,7 @@ import '../../widgets/transaction/balance_display_widget.dart';
 import '../../widgets/transaction/withdraw_method_widget.dart';
 import '../../services/qr_service.dart';
 import '../../routes/app_routes.dart';
+import '../../atm/atm_locations_screen.dart';
 
 class WithdrawScreen extends StatefulWidget {
   const WithdrawScreen({super.key});
@@ -52,12 +53,8 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
     // Check if ATM is selected
     if (_selectedMethod == 'ATM') {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('ATM withdrawals coming soon!'),
-            backgroundColor: AppColors.primaryAmber,
-            duration: Duration(seconds: 3),
-          ),
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (context) => const ATMLocationsScreen()),
         );
       }
       return;
@@ -114,12 +111,8 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
     // Check if ATM is selected
     if (_selectedMethod == 'ATM') {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('ATM withdrawals coming soon!'),
-            backgroundColor: AppColors.primaryAmber,
-            duration: Duration(seconds: 3),
-          ),
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (context) => const ATMLocationsScreen()),
         );
       }
       return;

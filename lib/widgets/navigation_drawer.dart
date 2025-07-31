@@ -79,10 +79,20 @@ class AppNavigationDrawer extends StatelessWidget {
                   ),
                   _buildNavigationItem(
                     context: context,
+                    icon: Icons.atm,
+                    activeIcon: Icons.atm,
+                    title: 'ATM',
+                    index: 5,
+                    onTap:
+                        () => _navigateToPage(context, AppRoutes.atmLocations),
+                    isDarkMode: isDarkMode,
+                  ),
+                  _buildNavigationItem(
+                    context: context,
                     icon: Icons.send_outlined,
                     activeIcon: Icons.send,
                     title: 'Transfer',
-                    index: 5,
+                    index: 6,
                     onTap: () => _navigateToPage(context, AppRoutes.transfer),
                     isDarkMode: isDarkMode,
                   ),
@@ -91,7 +101,7 @@ class AppNavigationDrawer extends StatelessWidget {
                     icon: Icons.history_outlined,
                     activeIcon: Icons.history,
                     title: 'Transactions',
-                    index: 6,
+                    index: 7,
                     onTap:
                         () => _navigateToPage(context, AppRoutes.transactions),
                     isDarkMode: isDarkMode,
@@ -101,7 +111,7 @@ class AppNavigationDrawer extends StatelessWidget {
                     icon: Icons.qr_code_outlined,
                     activeIcon: Icons.qr_code,
                     title: 'QR Codes',
-                    index: 7,
+                    index: 8,
                     onTap: () => _navigateToPage(context, AppRoutes.qrDisplay),
                     isDarkMode: isDarkMode,
                   ),
@@ -126,7 +136,7 @@ class AppNavigationDrawer extends StatelessWidget {
                     icon: Icons.person_outline,
                     activeIcon: Icons.person,
                     title: 'My Account',
-                    index: 8,
+                    index: 9,
                     onTap: () => _navigateToPage(context, AppRoutes.account),
                     isDarkMode: isDarkMode,
                   ),
@@ -135,7 +145,7 @@ class AppNavigationDrawer extends StatelessWidget {
                     icon: Icons.lock_outline,
                     activeIcon: Icons.lock,
                     title: 'Change Password',
-                    index: 9,
+                    index: 10,
                     onTap:
                         () =>
                             _navigateToPage(context, AppRoutes.changePassword),
@@ -146,7 +156,7 @@ class AppNavigationDrawer extends StatelessWidget {
                     icon: Icons.settings_outlined,
                     activeIcon: Icons.settings,
                     title: 'Settings',
-                    index: 10,
+                    index: 11,
                     onTap:
                         () => _navigateToPage(context, AppRoutes.settingsRoute),
                     isDarkMode: isDarkMode,

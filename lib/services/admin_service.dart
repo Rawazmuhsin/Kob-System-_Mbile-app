@@ -401,7 +401,7 @@ class AdminService {
         {
           'status': 'REJECTED',
           'approval_date': DateTime.now().toIso8601String(),
-          'description': '$reason',
+          'description': reason,
         },
         where: 'transaction_id = ?',
         whereArgs: [transactionId],

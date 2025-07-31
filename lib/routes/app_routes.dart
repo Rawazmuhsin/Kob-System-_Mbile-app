@@ -18,6 +18,11 @@ import '../screens/settings/settings_screen.dart';
 import '../screens/transaction/deposit_screen.dart';
 import '../screens/transaction/withdraw_screen.dart';
 import '../screens/admin/transaction_approval_screen.dart';
+import '../atm/atm_locations_screen.dart';
+import '../atm/atm_qr_screen.dart';
+import '../atm/atm_connection_screen.dart';
+import '../atm/atm_withdraw_screen.dart';
+import '../models/atm_location.dart';
 
 class AppRoutes {
   // Route names
@@ -34,6 +39,12 @@ class AppRoutes {
   static const String qrDisplay = '/qr-display';
   static const String qrScanner = '/qr-scanner';
   static const String qrExport = '/qr-export';
+
+  // ATM routes
+  static const String atmLocations = '/atm/locations';
+  static const String atmQr = '/atm/qr';
+  static const String atmConnection = '/atm/connection';
+  static const String atmWithdraw = '/atm/withdraw';
 
   // ADD THESE NEW ACCOUNT ROUTES
   static const String account = '/account';
@@ -130,6 +141,42 @@ class AppRoutes {
       case qrExport:
         return MaterialPageRoute(
           builder: (_) => const QRExportScreen(),
+          settings: settings,
+        );
+
+      // ATM Routes
+      case atmLocations:
+        return MaterialPageRoute(
+          builder: (_) => const ATMLocationsScreen(),
+          settings: settings,
+        );
+
+      case atmQr:
+        final args = settings.arguments as Map<String, dynamic>? ?? {};
+        final atmLocation = args['atmLocation'];
+        return MaterialPageRoute(
+          builder: (_) => ATMQRScreen(atmLocation: atmLocation),
+          settings: settings,
+        );
+
+      case atmConnection:
+        final args = settings.arguments as Map<String, dynamic>? ?? {};
+        final atmLocation = args['atmLocation'] as ATMLocation?;
+        final qrData = args['qrData'] as String? ?? '';
+        return MaterialPageRoute(
+          builder:
+              (_) => ATMConnectionScreen(
+                atmLocation: atmLocation!,
+                qrData: qrData,
+              ),
+          settings: settings,
+        );
+
+      case atmWithdraw:
+        final args = settings.arguments as Map<String, dynamic>? ?? {};
+        final atmLocation = args['atmLocation'];
+        return MaterialPageRoute(
+          builder: (_) => ATMWithdrawScreen(atmLocation: atmLocation),
           settings: settings,
         );
 

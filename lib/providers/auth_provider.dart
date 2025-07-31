@@ -286,6 +286,25 @@ class AuthProvider with ChangeNotifier {
     _isLoading = loading;
     notifyListeners();
   }
+
+  // Update current account (for balance updates, etc.)
+  void updateCurrentAccount(Account updatedAccount) {
+    _currentAccount = updatedAccount;
+    notifyListeners();
+  }
+
+  // Refresh account balance from database
+  Future<void> refreshAccountBalance() async {
+    if (_currentAccount?.accountId == null) return;
+
+    try {
+      // You can implement this to fetch the latest account data from database
+      print('Refreshing account balance for account ID: ${_currentAccount?.accountId}');
+      notifyListeners();
+    } catch (e) {
+      print('Error refreshing account balance: $e');
+    }
+  }
 }
 
 // Register result class
