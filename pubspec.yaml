@@ -74,18 +74,14 @@ dependencies:
   # Image handling
   image_picker: ^1.0.4
   image_cropper: ^5.0.1
+  image_gallery_saver: ^2.0.3
+  permission_handler: ^11.0.1
   
   # Security & Encryption
   crypto: ^3.0.3
   
   # File operations
   path_provider: ^2.1.1
-  
-  # Permissions
-  permission_handler: ^11.0.1
-  
-  # Save images to gallery
-  image_gallery_saver: ^2.0.3
 
   # Share QR code
   share_plus: ^7.2.1
