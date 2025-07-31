@@ -557,4 +557,53 @@ class QRService {
       print('Stack trace: $stackTrace');
     }
   }
+
+  // Add these methods to your existing QRService class:
+
+  // Generate QR data for transactions
+  static String generateTransactionQRData({
+    required int accountId,
+    required String username,
+    required String accountNumber,
+    required String transactionType,
+    required double amount,
+    required String description,
+    String? method, // For withdraw method
+  }) {
+    final Map<String, dynamic> data = {
+      'accountId': accountId,
+      'username': username,
+      'accountNumber': accountNumber,
+      'transactionType': transactionType,
+      'amount': amount,
+      'description': description,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    };
+
+    // Add method for withdrawals
+    if (method != null) {
+      data['method'] = method;
+    }
+
+    return jsonEncode(data);
+  }
+
+  // Parse transaction QR data
+  static Map<String, dynamic>? parseTransactionQRData(String qrData) {
+    try {
+      final data = jsonDecode(qrData) as Map<String, dynamic>;
+
+      // Validate required fields
+      if (!data.containsKey('accountId') ||
+          !data.containsKey('transactionType') ||
+          !data.containsKey('amount')) {
+        return null;
+      }
+
+      return data;
+    } catch (e) {
+      print('Error parsing QR data: $e');
+      return null;
+    }
+  }
 }

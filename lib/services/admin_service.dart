@@ -6,6 +6,8 @@ import '../core/db_helper.dart';
 import '../models/admin.dart';
 import '../models/account.dart';
 import '../models/transaction.dart';
+import '../models/admin/pending_transaction.dart';
+// Import the new model
 
 class AdminService {
   static final AdminService _instance = AdminService._internal();
@@ -221,15 +223,135 @@ class AdminService {
     }
   }
 
-  // Get pending transactions for approval
-  Future<List<Transaction>> getPendingTransactions() async {
-    return await getAllTransactions(status: 'PENDING');
+  // lib/services/admin_service.dart (add to existing file)
+
+  // Get pending transactions
+  Future<List<PendingTransaction>> getPendingTransactions() async {
+    try {
+      // Get pending transactions first
+      final transactionsData = await _dbHelper.query(
+        'transactions',
+        where: 'status = ?',
+        whereArgs: ['PENDING'],
+        orderBy: 'transaction_date DESC',
+      );
+
+      List<PendingTransaction> pendingTransactions = [];
+
+      // For each transaction, get the associated account info
+      for (final transactionMap in transactionsData) {
+        final accountId = transactionMap['account_id'] as int;
+        final accountData = await _dbHelper.query(
+          'accounts',
+          where: 'account_id = ?',
+          whereArgs: [accountId],
+        );
+
+        if (accountData.isNotEmpty) {
+          final account = accountData.first;
+          final pendingTransaction = PendingTransaction.fromMap({
+            ...transactionMap,
+            'username': account['username'],
+            'account_number': account['account_number'],
+          });
+          pendingTransactions.add(pendingTransaction);
+        }
+      }
+
+      return pendingTransactions;
+    } catch (e) {
+      print('Error fetching pending transactions: $e');
+      throw Exception('Failed to fetch pending transactions');
+    }
   }
 
-  // Approve transaction
+  // Approve transaction and update balance
   Future<bool> approveTransaction(int transactionId) async {
     try {
-      final result = await _dbHelper.update(
+      print('🔄 Starting transaction approval for ID: $transactionId');
+
+      // Simple database access test
+      try {
+        await _dbHelper.database;
+        print('✅ Database connection established');
+      } catch (e) {
+        print('❌ Database connection failed: $e');
+        return false;
+      }
+
+      // Get transaction details
+      final transactionQuery = await _dbHelper.query(
+        'transactions',
+        where: 'transaction_id = ?',
+        whereArgs: [transactionId],
+      );
+
+      if (transactionQuery.isEmpty) {
+        print('❌ Transaction not found with ID: $transactionId');
+        return false;
+      }
+
+      final transaction = Transaction.fromMap(transactionQuery.first);
+      final accountId = transaction.accountId;
+
+      print(
+        '📋 Transaction details: ${transaction.transactionType}, Amount: ${transaction.amount}, Status: ${transaction.status}',
+      );
+
+      // Check if transaction is already approved
+      if (transaction.status == 'APPROVED') {
+        print('⚠️ Transaction already approved');
+        return false;
+      }
+
+      // Get current account balance
+      final accountQuery = await _dbHelper.query(
+        'accounts',
+        where: 'account_id = ?',
+        whereArgs: [accountId],
+      );
+
+      if (accountQuery.isEmpty) {
+        print('❌ Account not found with ID: $accountId');
+        return false;
+      }
+
+      // Handle both int and double types for balance
+      final balanceValue = accountQuery.first['balance'];
+      double currentBalance;
+      if (balanceValue is int) {
+        currentBalance = balanceValue.toDouble();
+      } else if (balanceValue is double) {
+        currentBalance = balanceValue;
+      } else {
+        print('❌ Invalid balance type: ${balanceValue.runtimeType}');
+        return false;
+      }
+
+      double newBalance = currentBalance;
+
+      print(
+        '💰 Current balance: $currentBalance (type: ${balanceValue.runtimeType})',
+      );
+
+      // Update balance based on transaction type
+      if (transaction.transactionType == 'deposit') {
+        newBalance += transaction.amount;
+        print('📈 Deposit: New balance will be: $newBalance');
+      } else if (transaction.transactionType == 'withdrawal') {
+        // Check if sufficient funds for withdrawal
+        if (currentBalance < transaction.amount) {
+          print(
+            '❌ Insufficient funds for withdrawal. Current: $currentBalance, Requested: ${transaction.amount}',
+          );
+          return false;
+        }
+        newBalance -= transaction.amount;
+        print('📉 Withdrawal: New balance will be: $newBalance');
+      }
+
+      // Update transaction status
+      final transactionUpdateResult = await _dbHelper.update(
         'transactions',
         {
           'status': 'APPROVED',
@@ -238,29 +360,57 @@ class AdminService {
         where: 'transaction_id = ?',
         whereArgs: [transactionId],
       );
-      return result > 0;
+
+      print(
+        '📝 Transaction update result: $transactionUpdateResult rows affected',
+      );
+
+      if (transactionUpdateResult == 0) {
+        print('❌ Failed to update transaction status');
+        return false;
+      }
+
+      // Update account balance
+      final balanceUpdateResult = await _dbHelper.update(
+        'accounts',
+        {'balance': newBalance},
+        where: 'account_id = ?',
+        whereArgs: [accountId],
+      );
+
+      print('💳 Balance update result: $balanceUpdateResult rows affected');
+
+      if (balanceUpdateResult == 0) {
+        print('❌ Failed to update account balance');
+        return false;
+      }
+
+      print('✅ Transaction approved successfully');
+      return true;
     } catch (e) {
-      throw Exception('Error approving transaction: $e');
+      print('❌ Error approving transaction: $e');
+      return false;
     }
   }
 
   // Reject transaction
   Future<bool> rejectTransaction(int transactionId, String reason) async {
     try {
-      final result = await _dbHelper.update(
+      await _dbHelper.update(
         'transactions',
         {
           'status': 'REJECTED',
-          'description':
-              '${await _getTransactionDescription(transactionId)} - REJECTED: $reason',
           'approval_date': DateTime.now().toIso8601String(),
+          'description': '$reason',
         },
         where: 'transaction_id = ?',
         whereArgs: [transactionId],
       );
-      return result > 0;
+
+      return true;
     } catch (e) {
-      throw Exception('Error rejecting transaction: $e');
+      print('Error rejecting transaction: $e');
+      return false;
     }
   }
 
