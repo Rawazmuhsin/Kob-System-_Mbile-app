@@ -24,6 +24,7 @@ import '../atm/atm_connection_screen.dart';
 import '../atm/atm_withdraw_screen.dart';
 import '../models/atm_location.dart';
 import '../screens/transaction/transfer_screen.dart';
+import '../screens/transaction/transaction_page.dart';
 
 class AppRoutes {
   // Route names
@@ -37,6 +38,7 @@ class AppRoutes {
   static const String withdraw = '/withdraw';
   static const String transfer = '/transfer';
   static const String transactions = '/transactions';
+  static const String transactionHistory = '/transaction-history';
   static const String qrDisplay = '/qr-display';
   static const String qrScanner = '/qr-scanner';
   static const String qrExport = '/qr-export';
@@ -47,10 +49,9 @@ class AppRoutes {
   static const String atmConnection = '/atm/connection';
   static const String atmWithdraw = '/atm/withdraw';
 
-  // ADD THESE NEW ACCOUNT ROUTES
+  // User Account routes
   static const String account = '/account';
   static const String changePassword = '/change-password';
-  // ADD SETTINGS ROUTE
   static const String settingsRoute = '/settings';
 
   // Admin routes
@@ -102,7 +103,7 @@ class AppRoutes {
           settings: settings,
         );
 
-      // ADD THESE NEW ACCOUNT ROUTES
+      // User Account Routes
       case account:
         return MaterialPageRoute(
           builder: (_) => const AccountScreen(),
@@ -115,10 +116,40 @@ class AppRoutes {
           settings: settings,
         );
 
-      // ADD SETTINGS ROUTE
       case settingsRoute:
         return MaterialPageRoute(
           builder: (_) => const SettingsScreen(),
+          settings: settings,
+        );
+
+      // Transaction Routes
+      case deposit:
+        return MaterialPageRoute(
+          builder: (_) => const DepositScreen(),
+          settings: settings,
+        );
+
+      case withdraw:
+        return MaterialPageRoute(
+          builder: (_) => const WithdrawScreen(),
+          settings: settings,
+        );
+
+      case transfer:
+        return MaterialPageRoute(
+          builder: (_) => const TransferScreen(),
+          settings: settings,
+        );
+
+      case transactions:
+        return MaterialPageRoute(
+          builder: (_) => const TransactionPage(),
+          settings: settings,
+        );
+
+      case transactionHistory:
+        return MaterialPageRoute(
+          builder: (_) => const TransactionPage(),
           settings: settings,
         );
 
@@ -173,81 +204,11 @@ class AppRoutes {
           settings: settings,
         );
 
-      case transfer:
-        return MaterialPageRoute(
-          builder: (_) => const TransferScreen(),
-          settings: settings,
-        );
-
       case atmWithdraw:
         final args = settings.arguments as Map<String, dynamic>? ?? {};
         final atmLocation = args['atmLocation'];
         return MaterialPageRoute(
           builder: (_) => ATMWithdrawScreen(atmLocation: atmLocation),
-          settings: settings,
-        );
-
-      case deposit:
-        return MaterialPageRoute(
-          builder: (_) => const DepositScreen(),
-          settings: settings,
-        );
-
-      case withdraw:
-        return MaterialPageRoute(
-          builder: (_) => const WithdrawScreen(),
-          settings: settings,
-        );
-
-      case transfer:
-        return MaterialPageRoute(
-          builder:
-              (_) => const Scaffold(
-                body: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.send, size: 64, color: Colors.blue),
-                      SizedBox(height: 16),
-                      Text(
-                        'Transfer Screen',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Text('Coming Soon'),
-                    ],
-                  ),
-                ),
-              ),
-          settings: settings,
-        );
-
-      case transactions:
-        return MaterialPageRoute(
-          builder:
-              (_) => const Scaffold(
-                body: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.history, size: 64, color: Colors.purple),
-                      SizedBox(height: 16),
-                      Text(
-                        'Transaction History',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Text('Coming Soon'),
-                    ],
-                  ),
-                ),
-              ),
           settings: settings,
         );
 
@@ -336,7 +297,7 @@ class AppRoutes {
     }
   }
 
-  // PRESERVE ALL YOUR EXISTING NAVIGATION HELPER METHODS
+  // Navigation Helper Methods
   static void navigateToLogin(BuildContext context) {
     Navigator.pushNamed(context, login);
   }
@@ -382,7 +343,11 @@ class AppRoutes {
     Navigator.pushNamed(context, transactions);
   }
 
-  // ADD NEW ACCOUNT NAVIGATION HELPERS
+  static void navigateToTransactionHistory(BuildContext context) {
+    Navigator.pushNamed(context, transactionHistory);
+  }
+
+  // Account navigation helpers
   static void navigateToAccount(BuildContext context) {
     Navigator.pushNamed(context, account);
   }
@@ -391,7 +356,6 @@ class AppRoutes {
     Navigator.pushNamed(context, changePassword);
   }
 
-  // ADD SETTINGS NAVIGATION HELPER
   static void navigateToSettings(BuildContext context) {
     Navigator.pushNamed(context, settingsRoute);
   }
@@ -415,6 +379,42 @@ class AppRoutes {
 
   static void navigateToQrExport(BuildContext context) {
     Navigator.pushNamed(context, qrExport);
+  }
+
+  // ATM navigation helpers
+  static void navigateToAtmLocations(BuildContext context) {
+    Navigator.pushNamed(context, atmLocations);
+  }
+
+  static void navigateToAtmQr(BuildContext context, ATMLocation atmLocation) {
+    Navigator.pushNamed(
+      context,
+      atmQr,
+      arguments: {'atmLocation': atmLocation},
+    );
+  }
+
+  static void navigateToAtmConnection(
+    BuildContext context,
+    ATMLocation atmLocation,
+    String qrData,
+  ) {
+    Navigator.pushNamed(
+      context,
+      atmConnection,
+      arguments: {'atmLocation': atmLocation, 'qrData': qrData},
+    );
+  }
+
+  static void navigateToAtmWithdraw(
+    BuildContext context,
+    ATMLocation atmLocation,
+  ) {
+    Navigator.pushNamed(
+      context,
+      atmWithdraw,
+      arguments: {'atmLocation': atmLocation},
+    );
   }
 
   // Admin navigation helpers
@@ -481,9 +481,14 @@ class AppRoutes {
       withdraw,
       transfer,
       transactions,
+      transactionHistory,
       qrDisplay,
       qrScanner,
       qrExport,
+      atmLocations,
+      atmQr,
+      atmConnection,
+      atmWithdraw,
       adminDashboard,
       adminUsers,
       adminTransactions,
