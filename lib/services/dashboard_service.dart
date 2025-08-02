@@ -1,3 +1,4 @@
+// lib/services/dashboard_service.dart
 import '../core/db_helper.dart';
 import '../models/account.dart';
 import '../models/transaction.dart';
@@ -154,6 +155,117 @@ class DashboardService {
       return result > 0;
     } catch (e) {
       throw Exception('Error creating transaction: $e');
+    }
+  }
+
+  // ✅ NEW METHOD: Get account by ID for transfers and QR scanning
+  Future<Account?> getAccountById(int accountId) async {
+    try {
+      final accountData = await _dbHelper.query(
+        'accounts',
+        where: 'account_id = ?',
+        whereArgs: [accountId],
+        limit: 1,
+      );
+
+      if (accountData.isNotEmpty) {
+        return Account.fromMap(accountData.first);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Error getting account by ID: $e');
+    }
+  }
+
+  // ✅ NEW METHOD: INSTANT TRANSFER - Updates both accounts immediately
+  Future<bool> executeInstantTransfer({
+    required int fromAccountId,
+    required int toAccountId,
+    required double amount,
+    required String description,
+  }) async {
+    final db = await _dbHelper.database;
+
+    try {
+      // Execute as atomic transaction
+      bool success = false;
+
+      await db.transaction((txn) async {
+        // Get current balances
+        final senderQuery = await txn.query(
+          'accounts',
+          where: 'account_id = ?',
+          whereArgs: [fromAccountId],
+        );
+
+        final recipientQuery = await txn.query(
+          'accounts',
+          where: 'account_id = ?',
+          whereArgs: [toAccountId],
+        );
+
+        if (senderQuery.isEmpty || recipientQuery.isEmpty) {
+          throw Exception('One or both accounts not found');
+        }
+
+        final senderBalance = (senderQuery.first['balance'] as num).toDouble();
+        final recipientBalance =
+            (recipientQuery.first['balance'] as num).toDouble();
+
+        // Double-check balance
+        if (senderBalance < amount) {
+          throw Exception('Insufficient funds');
+        }
+
+        // Update sender balance (deduct money)
+        final senderNewBalance = senderBalance - amount;
+        await txn.update(
+          'accounts',
+          {'balance': senderNewBalance},
+          where: 'account_id = ?',
+          whereArgs: [fromAccountId],
+        );
+
+        // Update recipient balance (add money)
+        final recipientNewBalance = recipientBalance + amount;
+        await txn.update(
+          'accounts',
+          {'balance': recipientNewBalance},
+          where: 'account_id = ?',
+          whereArgs: [toAccountId],
+        );
+
+        // Create sender transaction record (COMPLETED status)
+        final referenceNumber = _generateReferenceNumber();
+        await txn.insert('transactions', {
+          'account_id': fromAccountId,
+          'transaction_type': 'transfer',
+          'amount': amount,
+          'description': 'Transfer sent: $description',
+          'status': 'COMPLETED', // ✅ INSTANT - No admin approval needed
+          'recipient_account_number': toAccountId.toString(),
+          'reference_number': referenceNumber,
+          'transaction_date': DateTime.now().toIso8601String(),
+        });
+
+        // Create recipient transaction record (COMPLETED status)
+        await txn.insert('transactions', {
+          'account_id': toAccountId,
+          'transaction_type': 'deposit',
+          'amount': amount,
+          'description': 'Transfer received: $description',
+          'status': 'COMPLETED', // ✅ INSTANT - No admin approval needed
+          'recipient_account_number': fromAccountId.toString(),
+          'reference_number': referenceNumber,
+          'transaction_date': DateTime.now().toIso8601String(),
+        });
+
+        success = true;
+      });
+
+      return success;
+    } catch (e) {
+      throw Exception('Transfer failed: $e');
     }
   }
 

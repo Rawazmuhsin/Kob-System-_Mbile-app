@@ -458,39 +458,78 @@ class AuthService {
     }
   }
 
-  // Get account by ID
-  Future<Account?> getAccountById(int accountId) async {
+  Future<List<Account>> searchAccountsByPhone(String phone) async {
     try {
-      final accounts = await _dbHelper.query(
+      print('=== SEARCHING ACCOUNTS BY PHONE ===');
+      print('Phone: $phone');
+
+      final accountsData = await _dbHelper.query(
         'accounts',
-        where: 'account_id = ?',
-        whereArgs: [accountId],
+        where: 'phone = ?',
+        whereArgs: [phone.trim()],
       );
 
-      if (accounts.isNotEmpty) {
-        return Account.fromMap(accounts.first);
-      }
-      return null;
+      final accounts =
+          accountsData.map((data) => Account.fromMap(data)).toList();
+
+      print('✅ Found ${accounts.length} accounts with phone: $phone');
+      return accounts;
     } catch (e) {
-      throw Exception('Error retrieving account: $e');
+      print('❌ Search accounts by phone error: $e');
+      throw Exception('Search accounts by phone error: $e');
     }
   }
 
-  // Get account by email
   Future<Account?> getAccountByEmail(String email) async {
     try {
-      final accounts = await _dbHelper.query(
+      print('=== GETTING ACCOUNT BY EMAIL ===');
+      print('Email: $email');
+
+      final accountsData = await _dbHelper.query(
         'accounts',
-        where: 'email = ?',
-        whereArgs: [email.toLowerCase().trim()],
+        where: 'LOWER(email) = LOWER(?)',
+        whereArgs: [email.trim()],
+        limit: 1,
       );
 
-      if (accounts.isNotEmpty) {
-        return Account.fromMap(accounts.first);
+      if (accountsData.isNotEmpty) {
+        final account = Account.fromMap(accountsData.first);
+        print('✅ Account found for email: $email');
+        return account;
       }
+
+      print('❌ No account found for email: $email');
       return null;
     } catch (e) {
-      throw Exception('Error retrieving account: $e');
+      print('❌ Get account by email error: $e');
+      throw Exception('Get account by email error: $e');
+    }
+  }
+
+  // Get account by ID - CRITICAL for QR scanning
+  Future<Account?> getAccountById(int accountId) async {
+    try {
+      print('=== GETTING ACCOUNT BY ID ===');
+      print('Account ID: $accountId');
+
+      final accountsData = await _dbHelper.query(
+        'accounts',
+        where: 'account_id = ?',
+        whereArgs: [accountId],
+        limit: 1,
+      );
+
+      if (accountsData.isNotEmpty) {
+        final account = Account.fromMap(accountsData.first);
+        print('✅ Account found for ID: $accountId');
+        return account;
+      }
+
+      print('❌ No account found for ID: $accountId');
+      return null;
+    } catch (e) {
+      print('❌ Get account by ID error: $e');
+      throw Exception('Get account by ID error: $e');
     }
   }
 

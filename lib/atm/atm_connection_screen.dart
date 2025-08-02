@@ -10,10 +10,10 @@ class ATMConnectionScreen extends StatefulWidget {
   final String qrData;
 
   const ATMConnectionScreen({
-    Key? key,
+    super.key,
     required this.atmLocation,
     required this.qrData,
-  }) : super(key: key);
+  });
 
   @override
   State<ATMConnectionScreen> createState() => _ATMConnectionScreenState();

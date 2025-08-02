@@ -23,6 +23,7 @@ import '../atm/atm_qr_screen.dart';
 import '../atm/atm_connection_screen.dart';
 import '../atm/atm_withdraw_screen.dart';
 import '../models/atm_location.dart';
+import '../screens/transaction/transfer_screen.dart';
 
 class AppRoutes {
   // Route names
@@ -169,6 +170,12 @@ class AppRoutes {
                 atmLocation: atmLocation!,
                 qrData: qrData,
               ),
+          settings: settings,
+        );
+
+      case transfer:
+        return MaterialPageRoute(
+          builder: (_) => const TransferScreen(),
           settings: settings,
         );
 
