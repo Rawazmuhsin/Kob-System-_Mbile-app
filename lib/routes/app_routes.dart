@@ -26,6 +26,14 @@ import '../models/atm_location.dart';
 import '../screens/transaction/transfer_screen.dart';
 import '../screens/transaction/transaction_page.dart';
 
+// NEW ANALYTICS IMPORTS
+import '../screens/admin/admin_reports_screen.dart';
+import '../screens/admin/transaction_analytics_screen.dart';
+import '../screens/admin/user_analytics_screen.dart';
+import '../screens/admin/financial_reports_screen.dart';
+import '../screens/admin/performance_metrics_screen.dart';
+import '../screens/admin/export_center_screen.dart';
+
 class AppRoutes {
   // Route names
   static const String splash = '/';
@@ -63,6 +71,14 @@ class AppRoutes {
   static const String adminReports = '/admin/reports';
   static const String adminAudit = '/admin/audit';
   static const String adminSettings = '/admin/settings';
+
+  // NEW ANALYTICS ROUTES
+  static const String adminTransactionAnalytics =
+      '/admin/reports/transaction-analytics';
+  static const String adminUserAnalytics = '/admin/reports/user-analytics';
+  static const String adminFinancialReports = '/admin/reports/financial';
+  static const String adminPerformanceMetrics = '/admin/reports/performance';
+  static const String adminExportCenter = '/admin/reports/export';
 
   // Route generator
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -243,12 +259,41 @@ class AppRoutes {
           settings: settings,
         );
 
+      // UPDATED REPORTS ROUTE - Now uses actual AdminReportsScreen
       case adminReports:
         return MaterialPageRoute(
-          builder:
-              (_) => const Scaffold(
-                body: Center(child: Text('Reports & Analytics - Coming Soon')),
-              ),
+          builder: (_) => const AdminReportsScreen(),
+          settings: settings,
+        );
+
+      // NEW ANALYTICS ROUTES
+      case adminTransactionAnalytics:
+        return MaterialPageRoute(
+          builder: (_) => const TransactionAnalyticsScreen(),
+          settings: settings,
+        );
+
+      case adminUserAnalytics:
+        return MaterialPageRoute(
+          builder: (_) => const UserAnalyticsScreen(),
+          settings: settings,
+        );
+
+      case adminFinancialReports:
+        return MaterialPageRoute(
+          builder: (_) => const FinancialReportsScreen(),
+          settings: settings,
+        );
+
+      case adminPerformanceMetrics:
+        return MaterialPageRoute(
+          builder: (_) => const PerformanceMetricsScreen(),
+          settings: settings,
+        );
+
+      case adminExportCenter:
+        return MaterialPageRoute(
+          builder: (_) => const ExportCenterScreen(),
           settings: settings,
         );
 
@@ -446,6 +491,27 @@ class AppRoutes {
     Navigator.pushNamed(context, adminSettings);
   }
 
+  // NEW ANALYTICS NAVIGATION HELPERS
+  static void navigateToTransactionAnalytics(BuildContext context) {
+    Navigator.pushNamed(context, adminTransactionAnalytics);
+  }
+
+  static void navigateToUserAnalytics(BuildContext context) {
+    Navigator.pushNamed(context, adminUserAnalytics);
+  }
+
+  static void navigateToFinancialReports(BuildContext context) {
+    Navigator.pushNamed(context, adminFinancialReports);
+  }
+
+  static void navigateToPerformanceMetrics(BuildContext context) {
+    Navigator.pushNamed(context, adminPerformanceMetrics);
+  }
+
+  static void navigateToExportCenter(BuildContext context) {
+    Navigator.pushNamed(context, adminExportCenter);
+  }
+
   // Back navigation helpers
   static void goBack(BuildContext context) {
     Navigator.pop(context);
@@ -497,6 +563,12 @@ class AppRoutes {
       adminReports,
       adminAudit,
       adminSettings,
+      // NEW ANALYTICS ROUTES
+      adminTransactionAnalytics,
+      adminUserAnalytics,
+      adminFinancialReports,
+      adminPerformanceMetrics,
+      adminExportCenter,
     ];
   }
 
