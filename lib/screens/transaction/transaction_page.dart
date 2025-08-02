@@ -6,7 +6,9 @@ import 'dart:io';
 import '../../core/constants.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../widgets/navigation_drawer.dart';
+import '../../widgets/transaction/transaction_filter_widget.dart';
 import '../../services/export_service.dart';
+import '../../models/transaction.dart';
 
 class TransactionPage extends StatefulWidget {
   const TransactionPage({super.key});
@@ -16,12 +18,81 @@ class TransactionPage extends StatefulWidget {
 }
 
 class _TransactionPageState extends State<TransactionPage> {
+  String _selectedPeriod = 'All Time';
+  String _selectedType = 'All Types';
+
+  List<Transaction> _filterTransactions(List<Transaction> transactions) {
+    if (transactions.isEmpty) return [];
+
+    List<Transaction> filtered = transactions;
+
+    // Filter by period
+    if (_selectedPeriod != 'All Time') {
+      final now = DateTime.now();
+      if (_selectedPeriod == 'Today') {
+        filtered =
+            filtered
+                .where(
+                  (t) =>
+                      t.transactionDate != null &&
+                      t.transactionDate!.year == now.year &&
+                      t.transactionDate!.month == now.month &&
+                      t.transactionDate!.day == now.day,
+                )
+                .toList();
+      } else if (_selectedPeriod == 'Last 7 Days') {
+        final sevenDaysAgo = now.subtract(const Duration(days: 7));
+        filtered =
+            filtered
+                .where(
+                  (t) =>
+                      t.transactionDate != null &&
+                      t.transactionDate!.isAfter(sevenDaysAgo),
+                )
+                .toList();
+      } else if (_selectedPeriod == 'Last 30 Days') {
+        final thirtyDaysAgo = now.subtract(const Duration(days: 30));
+        filtered =
+            filtered
+                .where(
+                  (t) =>
+                      t.transactionDate != null &&
+                      t.transactionDate!.isAfter(thirtyDaysAgo),
+                )
+                .toList();
+      }
+    }
+
+    // Filter by type
+    if (_selectedType != 'All Types') {
+      String filterType = _selectedType.toLowerCase();
+      filtered =
+          filtered.where((t) {
+            final transactionType = t.transactionType?.toLowerCase() ?? '';
+            switch (filterType) {
+              case 'deposit':
+                return transactionType == 'deposit';
+              case 'withdrawal':
+                return transactionType == 'withdrawal';
+              case 'transfer':
+                return transactionType == 'transfer';
+
+              default:
+                return true;
+            }
+          }).toList();
+    }
+
+    return filtered;
+  }
+
   void _shareTransactions() async {
     final dashboardProvider = Provider.of<DashboardProvider>(
       context,
       listen: false,
     );
-    final transactions = dashboardProvider.recentTransactions;
+    final allTransactions = dashboardProvider.recentTransactions;
+    final transactions = _filterTransactions(allTransactions);
 
     if (transactions.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -142,150 +213,232 @@ class _TransactionPageState extends State<TransactionPage> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final transactions = dashboardProvider.recentTransactions;
+          try {
+            final transactions = dashboardProvider.recentTransactions;
+            final filteredTransactions = _filterTransactions(transactions);
 
-          if (transactions.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.receipt_long_outlined,
-                    size: 64,
-                    color: isDarkMode ? Colors.white30 : AppColors.lightText,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No transactions found',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: isDarkMode ? Colors.white70 : AppColors.lightText,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: transactions.length,
-            itemBuilder: (context, index) {
-              final transaction = transactions[index];
-              final isDebit =
-                  transaction.transactionType == 'withdrawal' ||
-                  transaction.transactionType == 'transfer';
-
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color:
-                      isDarkMode
-                          ? Colors.white.withOpacity(0.05)
-                          : Colors.white.withOpacity(0.8),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color:
-                        isDarkMode
-                            ? Colors.white.withOpacity(0.1)
-                            : Colors.black.withOpacity(0.05),
-                  ),
+            return Column(
+              children: [
+                // Filter widget
+                TransactionFilterWidget(
+                  selectedPeriod: _selectedPeriod,
+                  selectedType: _selectedType,
+                  onPeriodChanged: (period) {
+                    setState(() {
+                      _selectedPeriod = period;
+                    });
+                  },
+                  onTypeChanged: (type) {
+                    setState(() {
+                      _selectedType = type;
+                    });
+                  },
                 ),
-                child: Row(
-                  children: [
-                    // Transaction Icon
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: (isDebit ? Colors.red : AppColors.primaryGreen)
-                            .withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        isDebit
-                            ? Icons.remove_circle_outline
-                            : Icons.add_circle_outline,
-                        color: isDebit ? Colors.red : AppColors.primaryGreen,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-
-                    // Transaction Details
-                    Expanded(
+                if (filteredTransactions.isEmpty)
+                  Expanded(
+                    child: Center(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
+                          Icon(
+                            Icons.receipt_long_outlined,
+                            size: 64,
+                            color:
+                                isDarkMode
+                                    ? Colors.white30
+                                    : AppColors.lightText,
+                          ),
+                          const SizedBox(height: 16),
                           Text(
-                            transaction.description ?? 'Transaction',
+                            'No transactions found',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 18,
                               fontWeight: FontWeight.w600,
                               color:
                                   isDarkMode
-                                      ? Colors.white
-                                      : AppColors.darkText,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${transaction.transactionType?.toUpperCase() ?? 'UNKNOWN'} • ${transaction.transactionDate?.toString().split(' ')[0] ?? 'N/A'}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color:
-                                  isDarkMode
-                                      ? Colors.white60
+                                      ? Colors.white70
                                       : AppColors.lightText,
                             ),
                           ),
                         ],
                       ),
                     ),
+                  )
+                else
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: filteredTransactions.length,
+                      itemBuilder: (context, index) {
+                        try {
+                          final transaction = filteredTransactions[index];
+                          final isDebit =
+                              transaction.transactionType != null &&
+                              (transaction.transactionType == 'withdrawal' ||
+                                  transaction.transactionType == 'transfer');
 
-                    // Amount and Status
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          '${isDebit ? '-' : '+'}${r'$'}${transaction.amount.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color:
-                                isDebit ? Colors.red : AppColors.primaryGreen,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _getStatusColor(
-                              transaction.status,
-                            ).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            transaction.status.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: _getStatusColor(transaction.status),
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color:
+                                  isDarkMode
+                                      ? Colors.white.withOpacity(0.05)
+                                      : Colors.white.withOpacity(0.8),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color:
+                                    isDarkMode
+                                        ? Colors.white.withOpacity(0.1)
+                                        : Colors.black.withOpacity(0.05),
+                              ),
                             ),
-                          ),
-                        ),
-                      ],
+                            child: Row(
+                              children: [
+                                // Transaction Icon
+                                Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: (isDebit
+                                            ? Colors.red
+                                            : AppColors.primaryGreen)
+                                        .withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    isDebit
+                                        ? Icons.remove_circle_outline
+                                        : Icons.add_circle_outline,
+                                    color:
+                                        isDebit
+                                            ? Colors.red
+                                            : AppColors.primaryGreen,
+                                    size: 24,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+
+                                // Transaction Details
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        transaction.description ??
+                                            'Transaction',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color:
+                                              isDarkMode
+                                                  ? Colors.white
+                                                  : AppColors.darkText,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${transaction.transactionType?.toUpperCase() ?? 'UNKNOWN'} • ${transaction.transactionDate != null ? transaction.transactionDate!.toString().split(' ')[0] : 'N/A'}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color:
+                                              isDarkMode
+                                                  ? Colors.white60
+                                                  : AppColors.lightText,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                // Amount and Status
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      '${isDebit ? '-' : '+'}${r'$'}${transaction.amount.toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        color:
+                                            isDebit
+                                                ? Colors.red
+                                                : AppColors.primaryGreen,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: _getStatusColor(
+                                          transaction.status,
+                                        ).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        transaction.status.toUpperCase(),
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: _getStatusColor(
+                                            transaction.status,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        } catch (e) {
+                          // Return empty container if there's an error with this transaction
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(16),
+                            child: Text('Error loading transaction: $e'),
+                          );
+                        }
+                      },
                     ),
-                  ],
-                ),
-              );
-            },
-          );
+                  ),
+              ],
+            );
+          } catch (e) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: isDarkMode ? Colors.white30 : AppColors.lightText,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error loading transactions',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: isDarkMode ? Colors.white70 : AppColors.lightText,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    e.toString(),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isDarkMode ? Colors.white60 : AppColors.lightText,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
         },
       ),
     );
